@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-mp-purple: #7b2ff7;
+  --color-mp-purple-light: #9b5ff9;
+  --color-mp-purple-dark: #5a1ebd;
+  --color-mp-purple-glow: rgba(123, 47, 247, 0.15);
+
+  --color-surface-0: #09090b;
+  --color-surface-1: #111113;
+  --color-surface-2: #1a1a1f;
+  --color-surface-3: #252530;
+
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-border-hover: rgba(255, 255, 255, 0.12);
+
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #52525b;
+
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-danger: #ef4444;
+
+  --color-chain-ethereum: #627eea;
+  --color-chain-solana: #9945ff;
+  --color-chain-base: #0052ff;
+  --color-chain-polygon: #8247e5;
+  --color-chain-arbitrum: #28a0f0;
+  --color-chain-optimism: #ff0420;
+  --color-chain-bnb: #f0b90b;
+  --color-chain-avalanche: #e84142;
+  --color-chain-tron: #ff0013;
+  --color-chain-bitcoin: #f7931a;
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-surface-0);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}

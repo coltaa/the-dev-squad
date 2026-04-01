@@ -1,0 +1,314 @@
+# Pipeline Checklist
+
+This checklist travels with the build. Each agent checks off their section before passing it forward. No agent can move to the next phase until the previous section is fully checked off.
+
+Every handoff includes a message. The message format is specified at each handoff point — follow it exactly.
+
+**Build:** _(name of feature/task)_
+**Started:** _(date)_
+**Project folder:** _(A creates this in `/Projects/` based on the project theme — e.g. `/Projects/auth-refactor/`)_
+
+---
+
+## Phase 0: Concept — User → Agent A (Planner)
+
+### Concept Intake (A)
+- [ ] Received build concept from user
+- [ ] Asked clarifying questions (if needed)
+- [ ] Received answers from user (if needed)
+- [ ] Concept is clear — ready to plan
+
+> **From:** User
+> **To:** A (Planner)
+> **Phase:** Concept
+> **Build concept:** _(what the user wants built)_
+
+If A needs clarification:
+
+> **From:** A (Planner)
+> **To:** User
+> **Phase:** Concept
+> **Questions:**
+> 1. _(question)_
+
+User answers, A continues. This is the last human interaction. Pipeline runs autonomously from here.
+
+---
+
+## Phase 1: Planning — Agent A (Planner)
+
+### Setup (A)
+- [ ] Create project folder in `/Projects/` — name it based on the project theme or idea
+- [ ] Copy this checklist into the project folder (e.g. `/Projects/project-name/checklist.md`)
+- [ ] Read `build-plan-template.md` — this is your playbook. Follow it step by step. Understand the principles: research first, verify from source, no guesswork, give the coder full context, review until bulletproof.
+- [ ] Create the plan file in the project folder (e.g. `/Projects/project-name/plan.md`)
+
+### Research (A)
+- [ ] Read relevant architecture docs
+- [ ] Read the actual source code for files that will be modified
+- [ ] Web search if needed (external APIs, packages, docs)
+- [ ] GitHub search if needed (repos, issues, examples)
+- [ ] Package verify if needed (install, read source, confirm it works)
+
+### Write (A)
+- [ ] What we're building — clear, concise summary
+- [ ] How it works — the pattern/flow
+- [ ] Files to create — with code templates
+- [ ] Files to modify — with exact line numbers and code snippets
+- [ ] Special cases called out
+- [ ] Architecture rules listed
+
+### Verify (A)
+- [ ] Zero guesses — every package, function, field, and line number verified from actual source
+- [ ] No shortcuts — everything works completely or is explicitly deferred with a reason
+
+### Context (A)
+- [ ] Coder has full context — knows what to read, research, and build before starting
+- [ ] Coder can build without asking a single question
+
+### Self-Review (A)
+- [ ] Read the plan as a fresh session — found and filled all gaps
+- [ ] Reviewed again
+
+### Handoff (A → B)
+- [ ] All above checkboxes complete
+- [ ] Plan file is written and saved in the project folder
+- [ ] Send message to B:
+
+> **From:** A (Planner)
+> **To:** B (Plan Reviewer)
+> **Phase:** Plan Review
+> **Action needed:** Review this plan. Send back any questions — gaps, assumptions, anything unverified. If you have zero concerns, approve it and send it back.
+>
+> **The plan:** _(path to plan file in project folder)_
+> **What I researched:** _(list sources read — docs, source code, web)_
+> **What I verified:** _(list what was confirmed from source)_
+> **What the coder needs to know:** _(key context for C)_
+
+---
+
+## Phase 1b: Plan Review — Agent B (Plan Reviewer)
+
+### Review (B)
+- [ ] Read the full plan
+
+### B either has feedback or doesn't:
+
+**If B has no feedback** → approve immediately:
+
+> **From:** B (Plan Reviewer)
+> **To:** A (Planner)
+> **Phase:** Plan Approved
+> **Action needed:** No feedback. Plan is perfect. Send it to C (Coder) to begin building.
+
+**If B has questions** → send to A:
+
+> **From:** B (Plan Reviewer)
+> **To:** A (Planner)
+> **Phase:** Plan Review
+> **Action needed:** Answer these questions with verified information. Update the plan and send it back to me.
+>
+> **Questions:**
+> 1. _(question)_
+> 2. _(question)_
+> 3. _(question)_
+
+### When A responds → A sends back to B:
+
+> **From:** A (Planner)
+> **To:** B (Plan Reviewer)
+> **Phase:** Plan Review
+> **Action needed:** Review my answers. If satisfied, approve the plan. If not, send more questions.
+>
+> **Answers:**
+> 1. _(answer with source verification)_
+> 2. _(answer with source verification)_
+> 3. _(answer with source verification)_
+>
+> **Updated plan:** _(path to plan file — A updates the same file)_
+
+### B reviews answers and either sends more questions (repeat above) or approves.
+
+### Resolution (B)
+- [ ] All questions answered by A with verified information _(or N/A — no questions needed)_
+- [ ] No remaining gaps, assumptions, or unknowns
+- [ ] Plan is bulletproof
+
+### Approval (B → A)
+- [ ] Plan approved
+- [ ] Send message to A:
+
+> **From:** B (Plan Reviewer)
+> **To:** A (Planner)
+> **Phase:** Plan Approved
+> **Action needed:** Plan is approved. Send it to C (Coder) to begin building.
+
+**B is done. B is not in the loop again.**
+
+### Final Plan (A)
+- [ ] A locks the plan — this is now the final, unmodifiable copy. No agent changes this file from this point forward. All agents reference this single file as the source of truth.
+
+---
+
+## Phase 2: Coding — Agent C (Coder)
+
+### Handoff (A → C)
+- [ ] A sends message to C:
+
+> **From:** A (Planner)
+> **To:** C (Coder)
+> **Phase:** Coding
+> **Action needed:** Build exactly what this plan says. No improvising, no interpreting, no "improving." When finished, send the code to D (Code Reviewer). If you hit something unexpected, ask me before guessing.
+>
+> **Plan file:** _(path to the locked plan file in project folder — read this, do not modify it)_
+> **Key context:** _(what C needs to know to start)_
+> **Files to read first:** _(if any)_
+
+### Receive (C)
+- [ ] Received approved plan from A
+- [ ] Read the full plan
+
+### Build (C)
+- [ ] Built exactly what the plan says
+- [ ] All files created as specified in the plan
+- [ ] All files modified as specified in the plan
+- [ ] All special cases handled as specified in the plan
+
+### Questions (C → A) _(if needed)_
+
+> **From:** C (Coder)
+> **To:** A (Planner)
+> **Phase:** Coding
+> **Action needed:** I hit something unexpected. Answer this so I can continue.
+>
+> **Question:** _(describe what's unexpected and what you need to know)_
+
+### A responds:
+
+> **From:** A (Planner)
+> **To:** C (Coder)
+> **Phase:** Coding
+> **Action needed:** Here's your answer. Continue building.
+>
+> **Answer:** _(answer with verification)_
+
+### Handoff (C → D)
+- [ ] All build checkboxes complete
+- [ ] Send message to D:
+
+> **From:** C (Coder)
+> **To:** D (Code Reviewer)
+> **Phase:** Code Review
+> **Action needed:** Review this code against the plan. Check that every item in the plan is accounted for. If you have issues, send them to me and I will fix. If the code matches the plan, move to testing.
+>
+> **The code:** _(what was built — files created, files modified)_
+> **Plan file:** _(path to the locked plan file so D can compare)_
+
+---
+
+## Phase 3: Code Review — Agent D (Code Reviewer)
+
+D reviews. D never touches the code. D sends issues back to C. C fixes.
+
+### Review (D)
+- [ ] Read the plan
+- [ ] Read the code
+- [ ] Code matches the plan — every item accounted for
+- [ ] No missing pieces
+- [ ] No wrong implementations
+- [ ] No deviations from the plan
+
+### If D has issues → send to C:
+
+> **From:** D (Code Reviewer)
+> **To:** C (Coder)
+> **Phase:** Code Review
+> **Action needed:** Fix these issues and send back the updated code.
+>
+> **Issues:**
+> 1. _(what's wrong and what the fix should be)_
+> 2. _(what's wrong and what the fix should be)_
+
+### C fixes and sends back to D:
+
+> **From:** C (Coder)
+> **To:** D (Code Reviewer)
+> **Phase:** Code Review
+> **Action needed:** Review my fixes. If satisfied, move to testing. If not, send more issues.
+>
+> **Fixes applied:**
+> 1. _(what was fixed)_
+> 2. _(what was fixed)_
+
+### D reviews fixes and either sends more issues (repeat above) or moves to testing.
+
+### Code Approval (D)
+- [ ] Satisfied with the code _(fixes applied if needed)_
+- [ ] Code matches the plan and is correct
+- [ ] Moving to testing
+
+---
+
+## Phase 4: Testing — Agent D (Tester)
+
+D tests. D never touches the code. If something fails, D sends it back to C. C fixes. They loop until it works.
+
+### Test (D)
+- [ ] Code runs
+- [ ] Code works as expected
+- [ ] All functionality confirmed against the plan
+- [ ] No errors, no broken behavior
+
+### If tests fail → send to C:
+
+> **From:** D (Tester)
+> **To:** C (Coder)
+> **Phase:** Testing
+> **Action needed:** These tests failed. Fix and send back.
+>
+> **Failures:**
+> 1. _(what failed and how it broke)_
+> 2. _(what failed and how it broke)_
+
+### C fixes and sends back to D:
+
+> **From:** C (Coder)
+> **To:** D (Tester)
+> **Phase:** Testing
+> **Action needed:** Re-test. These are the fixes I applied.
+>
+> **Fixes applied:**
+> 1. _(what was fixed)_
+> 2. _(what was fixed)_
+
+### D re-tests and either sends more failures (repeat above) or approves.
+
+### Test Approval (D)
+- [ ] All tests pass
+- [ ] Code is reviewed, tested, and ready
+
+### Handoff (D → A)
+- [ ] Send message to A:
+
+> **From:** D (Code Reviewer + Tester)
+> **To:** A (Planner)
+> **Phase:** Deploy
+> **Action needed:** Code is reviewed and tested. Ready for commit, push, and deploy.
+>
+> **What was reviewed:** _(summary of code review — what matched, what was fixed)_
+> **What was tested:** _(summary of tests — what passed, what was fixed)_
+> **The code:** _(final state of all files)_
+
+---
+
+## Phase 5: Deploy — Agent A (Planner)
+
+### Receive (A)
+- [ ] Received reviewed and tested code from D
+- [ ] Confirmed D's review and test summaries look correct
+
+### Finalize (A)
+- [ ] Committed _(if repo exists)_
+- [ ] Pushed _(if repo exists)_
+- [ ] Deployed _(if applicable)_
+- [ ] Build complete
