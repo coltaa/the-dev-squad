@@ -1,12 +1,28 @@
-# The Dev Squad
+<p align="center">
+  <h1 align="center">The Dev Squad</h1>
+  <p align="center"><strong>5 Claude Code sessions that talk to each other to build software.</strong></p>
+</p>
 
-![The Dev Squad](demo.gif)
+<p align="center">
+  <img src="https://img.shields.io/badge/version-0.1.2-blue" alt="Version" />
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
+  <img src="https://img.shields.io/badge/claude-opus%204.6-blueviolet" alt="Claude Opus 4.6" />
+  <img src="https://img.shields.io/badge/agents-5-orange" alt="5 Agents" />
+  <img src="https://img.shields.io/badge/API%20cost-$0-brightgreen" alt="Zero API Cost" />
+  <img src="https://img.shields.io/badge/node-22%2B-339933" alt="Node 22+" />
+</p>
 
-5 Claude Code sessions that talk to each other to build software.
+<p align="center">
+  <img src="demo.gif" alt="The Dev Squad Demo" width="800" />
+</p>
 
-One plans. One reviews. One codes. One tests. One supervises. They communicate through structured signals, review each other's work, and loop until every step is right. The result is bulletproof plans that produce bulletproof builds.
+---
 
-No API keys. No per-token costs. All 5 sessions run on your Claude subscription. You describe what you want, and the team builds it — start to finish — without errors.
+> One plans. One reviews. One codes. One tests. One supervises. They communicate through structured signals, review each other's work, and loop until every step is right. The result is bulletproof plans that produce bulletproof builds.
+>
+> No API keys. No per-token costs. All 5 sessions run on your Claude subscription.
+
+---
 
 ## Why This Exists
 
@@ -25,6 +41,8 @@ My rule: the plan must be 100% bulletproof with zero errors and evidence to veri
 The result: builds come out with no errors. I used to spend hours after a build going back and fixing things — missing dependencies, wrong API signatures, broken imports. Now, 99% of the time, the build produces exactly what I asked for. On the rare occasion something needs troubleshooting, every agent still has complete context because we didn't burn through the session going in circles. The planner remembers the concept. The coder remembers what it built. The tester remembers what it tested. Nobody lost context because each agent only did its one job.
 
 This saves me hours every day.
+
+---
 
 ## The Agents
 
@@ -62,17 +80,21 @@ Each agent is a separate Claude Code session running Claude Opus 4.6. They commu
 
 The plan-review loop between A and B catches design gaps before a single line of code is written. The test loop between C and D catches implementation bugs before anything ships. Each loop has no round limit — they keep going until it's right.
 
+---
+
 ## The Viewer
 
 A pixel art office where 5 agents sit at desks. You watch them work in real-time:
 
 - **Live Feed** — Every event from every agent, timestamped and color-coded
-- **Dashboard** — Phase progress, token usage, elapsed time, file count, errors, cost
+- **Dashboard** — Phase progress, elapsed time, file count, errors
 - **5-Panel Grid** — S (supervisor) panel on the left, A/B/C/D on the right. Each panel shows that agent's activity with auto-scroll. Click any panel to expand.
 - **Per-Panel Chat** — Each panel has its own input. Talk directly to any agent.
 - **Controls** — START, STOP, Reset, View Plan
 
 When idle, agents wander the office, visit the hookah lounge, and play ping pong.
+
+---
 
 ## Requirements
 
@@ -94,13 +116,15 @@ Open [http://localhost:3000](http://localhost:3000).
 
 That's it. The viewer handles everything — spawning agents, running the orchestrator, managing builds.
 
+---
+
 ## How to Use
 
 ### The UI
 
 The screen is split into two sections:
 
-**Top half** — A pixel art office with 5 agents at desks. They animate in real-time as they work. Below the office is a live feed showing every event from every agent. To the right is a dashboard with phase progress, token usage, elapsed time, and controls.
+**Top half** — A pixel art office with 5 agents at desks. They animate in real-time as they work. Below the office is a live feed showing every event from every agent. To the right is a dashboard with phase progress, elapsed time, and controls.
 
 **Bottom half** — A 5-panel grid. The **S (Supervisor)** panel spans the left column. The **A, B, C, D** panels fill the right in a 2x2 grid. Each panel shows that agent's activity and has its own chat input at the bottom.
 
@@ -137,6 +161,8 @@ The S panel on the left is **not** part of the pipeline. S is your diagnostic as
 | **Reset** | Stops everything, clears the staging area, resets any stuck projects. Use before starting a new build. |
 | **View Plan** | Opens the current `plan.md` in a modal (appears after A writes the plan) |
 
+---
+
 ## Security
 
 Agents are constrained by hooks, not prompts. A `PreToolUse` hook gates every tool call:
@@ -155,27 +181,7 @@ Additional protections:
 - Safe bash commands auto-approve, dangerous ones require your click
 - All sessions use `--permission-mode auto` for Claude's built-in safety classifier
 
-## Project Structure
-
-```
-the-dev-squad/
-  src/
-    app/
-      page.tsx                      # Main page — dashboard, panels, controls
-      api/                          # API routes (chat, start, stop, reset, state)
-    components/
-      mission/                      # Pixel art office scene
-    lib/
-      use-pipeline.ts               # React hook — polls state, exposes actions
-  pipeline/
-    orchestrator.ts                 # Spawns agents, routes signals, enforces flow
-    .claude/hooks/approval-gate.sh  # Per-agent permission enforcement
-    role-a.md, role-b.md, etc.      # Agent role context files
-    build-plan-template.md          # Template A follows when writing plans
-  public/
-    sprites/                        # Agent character sprites
-    ...                             # Office environment assets
-```
+---
 
 ## How Agents Communicate
 
@@ -197,10 +203,43 @@ Agents communicate via structured JSON — no text parsing:
 
 The orchestrator routes these signals between agents and advances the pipeline when an approval is received.
 
-## License
+---
 
-MIT
+## Project Structure
+
+```
+the-dev-squad/
+  src/
+    app/
+      page.tsx                      # Main page — dashboard, panels, controls
+      api/                          # API routes (chat, start, stop, reset, state)
+    components/
+      mission/                      # Pixel art office scene
+    lib/
+      use-pipeline.ts               # React hook — polls state, exposes actions
+  pipeline/
+    orchestrator.ts                 # Spawns agents, routes signals, enforces flow
+    .claude/hooks/approval-gate.sh  # Per-agent permission enforcement
+    role-a.md, role-b.md, etc.      # Agent role context files
+    build-plan-template.md          # Template A follows when writing plans
+  public/
+    sprites/                        # Character and furniture sprites
+```
 
 ---
 
-Built with Claude Code. Runs on Claude Code. No API required.
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
+MIT - see [LICENSE](LICENSE) for details.
+
+Copyright (c) 2026 CrashOverride LLC
+
+---
+
+<p align="center">
+  <strong>Built with Claude Code. Runs on Claude Code. No API required.</strong>
+</p>

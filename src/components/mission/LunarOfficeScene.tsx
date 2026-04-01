@@ -985,7 +985,7 @@ export function LunarOfficeScene({
   );
 
   const label = phaseLabels[activePhase] || activePhase;
-  const tickerText = `/// PIPELINE FEED /// ${label.toUpperCase()} /// CRASHOVERRIDE DEV TEAM /// AGENTS: 5 /// BUILD IN PROGRESS /// `;
+  const tickerText = `/// PIPELINE FEED /// ${label.toUpperCase()} /// THE DEV SQUAD /// AGENTS: 5 /// BUILD IN PROGRESS /// `;
 
   return (
     <div className="rounded-2xl border border-white/10 bg-[#0e0c10] p-1 sm:p-2">
@@ -1260,7 +1260,7 @@ export function LunarOfficeScene({
 
           {/* Phase overlay */}
           <div className="absolute right-3 top-3 z-30 rounded-md border border-white/10 bg-black/60 px-3 py-2 text-right backdrop-blur-sm">
-            <p className="font-mono text-[9px] uppercase tracking-[0.24em] text-[#c8b9a7]">CrashOverride Dev Team</p>
+            <p className="font-mono text-[9px] uppercase tracking-[0.24em] text-[#c8b9a7]">The Dev Squad</p>
             <p className="mt-0.5 text-sm font-semibold text-white">{label}</p>
           </div>
 

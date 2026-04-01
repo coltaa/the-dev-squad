@@ -98,7 +98,7 @@ export default function PipelinePage() {
         });
       } catch {}
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('CrashOverride', { body: 'Build complete!' });
+        new Notification('The Dev Squad', { body: 'Build complete!' });
       }
     }
   }, [state.buildComplete, pipelineRunning]);
@@ -254,7 +254,7 @@ export default function PipelinePage() {
         <div className="flex flex-col gap-4 rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(24,18,33,0.96),rgba(11,10,16,0.98))] p-5">
           {/* Title + Phase */}
           <div>
-            <h1 className="text-xl font-bold uppercase tracking-wider text-white">CrashOverride</h1>
+            <h1 className="text-xl font-bold uppercase tracking-wider text-white">The Dev Squad</h1>
             <div className="mt-2 flex items-center gap-2">
               <Badge variant={PHASE_VARIANTS[phase] || 'neutral'}>
                 {PHASE_LABELS[phase] || phase}
@@ -290,31 +290,25 @@ export default function PipelinePage() {
                       isActive
                         ? 'border-emerald-500 text-emerald-400 shadow-[0_0_12px_rgba(34,197,94,0.3)]'
                         : status === 'done'
-                        ? 'border-[#1a1a2a] text-[#555]'
+                        ? 'border-red-500 text-red-400 shadow-[0_0_12px_rgba(239,68,68,0.3)]'
                         : 'border-[#252530] text-[#444]'
                     }`} style={{ background: '#0e0e16' }}>{id}</div>
                     <span className="text-[9px] text-slate-500">{AGENT_NAMES[id]}</span>
-                    <span className={`text-[8px] font-bold uppercase ${isActive ? 'text-emerald-400' : 'text-[#333]'}`}>{status}</span>
+                    <span className={`text-[8px] font-bold uppercase ${isActive ? 'text-emerald-400' : status === 'done' ? 'text-red-400' : 'text-[#333]'}`}>{status}</span>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Stats — usage + pipeline in two columns */}
+          {/* Stats */}
           <div>
-            <div className="mb-2 text-[10px] uppercase tracking-wider text-slate-500">Usage</div>
+            <div className="mb-2 text-[10px] uppercase tracking-wider text-slate-500">Pipeline</div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1 font-mono text-xs">
-              <div className="flex justify-between"><span className="text-slate-500">Tokens</span><span className="text-emerald-400">{tokens.toLocaleString()}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Elapsed</span><span className="text-slate-400">{elapsed}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Cached</span><span className="text-emerald-400">{cached.toLocaleString()}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Files</span><span className="text-slate-400">{filesModified}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Events</span><span className="text-slate-400">{state.events.length}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Errors</span><span className={errorCount > 0 ? 'text-red-400' : 'text-[#333]'}>{errorCount}</span></div>
-              {state.usage?.totalCostUsd > 0 && (
-                <div className="flex justify-between"><span className="text-slate-500">Cost</span><span className="text-amber-400">${state.usage.totalCostUsd.toFixed(4)}</span></div>
-              )}
-              <div className="flex justify-between"><span className="text-slate-500">Warnings</span><span className={warningCount > 0 ? 'text-amber-400' : 'text-[#333]'}>{warningCount}</span></div>
             </div>
           </div>
 
