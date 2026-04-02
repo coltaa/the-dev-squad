@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'The Dev Squad',
-  description: '5 Claude Code sessions that talk to each other to build software.',
+  description: 'Claude with its own dev team: one supervisor, four specialists, and both office and headless squad views.',
 };
 
 export default function RootLayout({

@@ -30,30 +30,30 @@ That is the backbone of the team model. The hook supports discipline and safety,
 
 ### Phase 0: Concept
 
-1. The **user** gives the build concept to **A**. This is the only required human interaction.
-2. **A** can ask the user clarifying questions — what do you want, how should it work, any constraints? The user answers. This is usually the last time the user needs to steer the build directly.
-3. From this point forward, the pipeline runs autonomously by default. The user usually watches the dashboard rather than steering the flow, but approvals can still appear for Bash commands in strict mode and `S` can help explain or recover the run when needed.
+1. The **user** usually gives the build concept to **S** first. Direct Planner chat still works, but the supervisor is now the recommended front door.
+2. **S** captures the concept and can start the team, pause after review, continue an approved plan, or help recover a stalled run.
+3. **A** can still ask clarifying questions when the concept is not complete enough to plan against.
+4. From this point forward, the pipeline runs autonomously by default. The user can still steer through the supervisor, intervene directly with specialists, or approve Bash commands in strict mode.
 
 ### Phase 1: Planning
 
-4. The pipeline creates a project folder in `~/Builds/` — named based on the project theme or idea. All files for this build live here.
-5. **A** reads `build-plan-template.md`. This is A's playbook. A follows it step by step.
-6. **A** completes the entire checklist in the template — research, write, verify, context, review. Every checkbox must be done before A sends anything to B.
-7. **A** writes the plan to a file in the project folder (e.g. `plan.md`). This is the single source of truth.
-8. When the checklist is fully complete, **A** sends the plan to **B** with context — what was researched, what was verified, what the coder needs to know.
-9. **B** reads the plan and sends questions back to **A**. These are real questions — gaps, assumptions, things that don't add up. If B has no questions, B approves immediately.
-10. **A** answers every question with verified information and updates the plan file.
-11. **B** reviews the answers. If satisfied, **B** tells **A** the plan is approved. If not, **B** sends more questions.
-12. This continues until **B** is fully satisfied. There is no round limit. The plan is not done until **B** says it's done.
-13. **B** tells **A** the plan is approved. **B's job is now finished. B is never in the loop again.**
-14. **A** locks the plan. This is now the final, unmodifiable copy. No agent changes this file from this point forward. All agents reference this single file.
+5. The pipeline creates a project folder in `~/Builds/` — named based on the project theme or idea. All files for this build live here.
+6. **A** reads `build-plan-template.md`. This is A's playbook. A follows it step by step.
+7. **A** completes the entire checklist in the template — research, write, verify, context, and one self-review pass.
+8. **A** writes the plan to `plan.md` in the project folder. This is the single source of truth.
+9. When the checklist is fully complete, **A** sends the plan to **B** with context — what was researched, what was verified, what the coder needs to know.
+10. **B** reads the plan and sends questions back to **A**. These are real questions — gaps, assumptions, things that do not add up. If B has no questions, B approves immediately.
+11. **A** answers every question with verified information and updates the plan file.
+12. **B** reviews the answers. If satisfied, **B** approves. If not, **B** sends more questions.
+13. This continues until **B** is fully satisfied. There is no round limit. The plan is not done until **B** says it is done.
+14. Once approved, the plan is locked. No agent changes this file from that point forward. If the supervisor selected `Plan Only` or `Stop After Review`, the run can pause cleanly here.
 
 ### Phase 2: Coding
 
-15. **A** sends the approved plan to **C**.
+15. The approved plan is handed to **C**.
 16. **C** reads the plan and builds exactly what it says. No improvising, no interpreting, no "improving."
 17. If **C** has a question — something unexpected at implementation time — **C** asks **A**. **A** answers. **C** continues.
-18. When **C** is finished coding, **C** sends the code to **D**.
+18. When **C** is finished coding, the work moves to **D**.
 
 ### Phase 3: Code Review
 
@@ -112,7 +112,7 @@ The user is mainly involved at the start:
 3. Pipeline runs autonomously from that point in the default mode, but the UI can still surface approvals for some Bash operations and future strict mode adds approval for all C/D Bash.
 4. User gets notified when the build is complete.
 
-The dashboard is mostly a monitoring window, but it can also become an approval surface when the policy requires it.
+The dashboard is more than a monitoring window now. It also shows supervisor guidance, current-turn recovery state, execution-path status, and the fallback controls that mirror supervisor actions.
 
 ---
 

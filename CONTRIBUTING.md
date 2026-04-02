@@ -41,7 +41,9 @@ Thanks for your interest in contributing! Here's how to get involved.
 - The viewer lives in `src/` — standard Next.js app router structure
 - Keep the pixel art style consistent if adding visual elements
 - Run `pnpm test:hook` after changing hook or orchestrator behavior
+- Run `pnpm test:runner` after changing runner / Docker execution behavior
 - Run `pnpm test:signals` after changing structured signal parsing
+- Run `pnpm test:supervisor` after changing supervisor summaries or recovery messaging
 - Test your changes with an actual pipeline run before submitting
 
 ## Architecture

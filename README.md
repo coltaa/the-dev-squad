@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.3.9-blue" alt="Version" />
+  <img src="https://img.shields.io/badge/version-0.3.10-blue" alt="Version" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
   <img src="https://img.shields.io/badge/claude-opus%204.6-blueviolet" alt="Claude Opus 4.6" />
   <img src="https://img.shields.io/badge/agents-5-orange" alt="5 Agents" />
@@ -57,11 +57,13 @@ Today, the current product shape is already visible:
 
 - the supervisor can capture the concept, start the team, pause after review, continue an approved plan, resume stalled planning/review turns, and stop the run
 - the specialists keep their own context in the same workspace instead of forcing you to copy/paste between sessions
-- the dashboard and office UI let you watch everything happen in one place
+- there are now two interfaces for the same team:
+  - the **Office View** for the full visual dashboard
+  - the **Squad View** for a calmer Supervisor-first workspace without the office UI
 
 Internally the app still labels the team as `S`, `A`, `B`, `C`, and `D`. In the product, think of them as the **Supervisor**, **Planner**, **Plan Reviewer**, **Coder**, and **Tester**.
 
-The longer-term implementation plan for pushing even more authority into the supervisor lives in [SUPERVISOR-BUILD-PLAN.md](SUPERVISOR-BUILD-PLAN.md). The concrete `v0.4` containment plan lives in [SANDBOX-RUNNER-PLAN.md](SANDBOX-RUNNER-PLAN.md).
+The longer-term implementation plan for pushing even more authority into the supervisor lives in [SUPERVISOR-BUILD-PLAN.md](SUPERVISOR-BUILD-PLAN.md). The concrete `v0.4` containment plan lives in [SANDBOX-RUNNER-PLAN.md](SANDBOX-RUNNER-PLAN.md). The next UX + headless-mode plan lives in [UI-AND-HEADLESS-PLAN.md](UI-AND-HEADLESS-PLAN.md).
 
 ---
 
@@ -105,12 +107,15 @@ The plan-review loop between the planner and the plan reviewer catches design ga
 
 ---
 
-## The Viewer
+## The Interfaces
+
+### Office View
 
 A pixel art office where 5 agents sit at desks. You watch them work in real-time:
 
 - **Live Feed** — Every event from every agent, timestamped and color-coded
 - **Dashboard** — Phase progress, elapsed time, file count, errors
+- **Execution Path** — The dashboard now says whether a run is on `Host`, `Isolated Alpha`, or `Host Fallback`
 - **Supervisor Update** — A manager-style summary of what the team is doing, what is blocked, and what S needs from you next
 - **Current Turn** — Shows which agent turn is active, what it is doing, and whether it looks stalled
 - **5-Panel Grid** — Supervisor panel on the left, Planner / Plan Reviewer / Coder / Tester on the right. Each panel shows that agent's activity with auto-scroll. Click any panel to expand.
@@ -119,6 +124,17 @@ A pixel art office where 5 agents sit at desks. You watch them work in real-time
 - **Art style** — The office scene uses a mix of original pixel sprites and CSS-drawn props
 
 When idle, agents wander the office, visit the hookah lounge, and play ping pong.
+
+### Squad View
+
+A simpler Supervisor-first workspace for the same team model:
+
+- **Normal chat feel** — one main Supervisor conversation with the same Planner, Plan Reviewer, Coder, and Tester behind it
+- **Specialist tabs** — jump directly into Planner / Reviewer / Coder / Tester when you want a longer back-and-forth
+- **Same runtime** — same orchestrator, same runner, same strict-mode approvals, same recovery behavior
+- **No office UI required** — better for users who want the dev-team model without the visual dashboard
+
+Open it at [http://localhost:3000/squad](http://localhost:3000/squad).
 
 ---
 
@@ -139,7 +155,7 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) for Office View or [http://localhost:3000/squad](http://localhost:3000/squad) for Squad View.
 
 That's it. The viewer handles everything — spawning agents, running the orchestrator, managing builds.
 
@@ -182,10 +198,11 @@ Strict mode is for users who want a human in the loop for shell execution from t
 You are the orchestrator. 5 panels, 5 Claude sessions, each with a specialty. You talk to whoever you want, whenever you want. No automation, no phases, no pipeline.
 
 - **No START/STOP** — there's no pipeline to run. You direct everything.
+- **Claude permission prompts still apply** — manual mode is looser than pipeline mode, but it is not unguarded. Claude Code can still ask for permission inside each direct session.
 - **Model picker** — Choose between Opus and Sonnet. Appears only in manual mode.
 - **Hand off →** — Each panel has a handoff button. Click it to grab that agent's last response and stage it as context for the next agent you message. One click to pass work between agents.
 - **Per-agent chat** — Each panel has its own send button. You can talk to multiple agents at once — they run independently.
-- **No role files** — Agents don't follow pipeline templates or checklists. They're just Claude sessions with expertise labels (planning, code review, coding, testing, diagnostics). You decide what they do.
+- **No pipeline role guardrails** — Agents don't follow the full pipeline templates/checklists automatically. They're direct Claude sessions with expertise labels (planning, code review, coding, testing, diagnostics), and you decide what they do.
 
 Manual mode is useful when you want the multi-panel workspace without the automation — prototyping, brainstorming, or running your own workflow.
 
@@ -229,6 +246,11 @@ The Supervisor panel on the left is the clearest version of the product idea. It
 Agents are constrained by a `PreToolUse` hook that gates every tool call. The hook prevents accidental lane drift — it is not a security sandbox. See [SECURITY.md](SECURITY.md) for the threat model, known limitations, and a matrix showing what is fixable in-hook vs what requires design changes or OS-level isolation.
 
 This project is meant to provide practical guardrails and a disciplined workflow, not a security sandbox. If you plan to use it on sensitive code or systems, read [SECURITY.md](SECURITY.md) first and decide whether the current threat model fits your environment.
+
+Plain-English status:
+- **Pipeline mode** is the more structured path today
+- **Manual mode** still has Claude permission prompts, but fewer product-level guardrails
+- **Isolated/Docker mode** is built under the hood, but not public-ready yet
 
 | Team Member | Can Write | Can Run Bash | Can Spawn Agents |
 |-------------|-----------|-------------|-----------------|

@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect, type TextareaHTMLAttributes } from 'react';
+import Link from 'next/link';
+import { useState, useRef, useEffect } from 'react';
 import { Badge } from '@/components/shared/Badge';
+import { AutoGrowTextarea } from '@/components/shared/AutoGrowTextarea';
 import { LunarOfficeScene } from '@/components/mission/LunarOfficeScene';
 import { canAutoResumeTurn } from '@/lib/pipeline-runtime';
 import { getExecutionPathStatus, getSupervisorRecommendation, getSupervisorUpdate } from '@/lib/pipeline-supervisor';
@@ -41,36 +43,6 @@ const MANUAL_ROLES: Record<string, string> = {
   D: 'Testing & debugging',
   S: 'Oversight & diagnostics',
 };
-
-function AutoGrowTextarea({
-  value,
-  className = '',
-  maxRows = 6,
-  ...props
-}: TextareaHTMLAttributes<HTMLTextAreaElement> & { maxRows?: number }) {
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-
-    el.style.height = 'auto';
-    const lineHeight = Number.parseFloat(window.getComputedStyle(el).lineHeight || '20');
-    const maxHeight = lineHeight * maxRows + 4;
-    el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
-    el.style.overflowY = el.scrollHeight > maxHeight ? 'auto' : 'hidden';
-  }, [value, maxRows]);
-
-  return (
-    <textarea
-      {...props}
-      ref={textareaRef}
-      value={value}
-      rows={1}
-      className={`${className} resize-none`}
-    />
-  );
-}
 
 export default function PipelinePage() {
   const [mode, setMode] = useState<AppMode>('pipeline');
@@ -316,6 +288,21 @@ export default function PipelinePage() {
   const supervisorRecommendation = isPipeline ? getSupervisorRecommendation(state, pendingApproval) : null;
   const supervisorUpdate = isPipeline ? getSupervisorUpdate(state, pendingApproval) : null;
   const executionPathStatus = isPipeline ? getExecutionPathStatus(state) : null;
+  const modePosture = isPipeline
+    ? {
+        title: 'Pipeline Guardrails',
+        summary: activeSecurityMode === 'strict'
+          ? 'Supervisor-led team run. Strict mode asks for approval on every Coder/Tester Bash call.'
+          : 'Supervisor-led team run. Fast mode keeps the team moving, but this is still guardrails, not a sandbox.',
+        detail: executionPathStatus?.detail || 'Host execution is the default today. Docker isolation is built, but still alpha until subscription auth in containers is reliable.',
+        tone: activeSecurityMode === 'strict' ? 'warning' : 'info',
+      }
+    : {
+        title: 'Manual Direct Sessions',
+        summary: 'You are driving the team directly. Claude permission prompts still protect each session, but pipeline role guardrails and supervisor automation are not enforcing the flow for you.',
+        detail: 'Use manual mode when you want direct specialist access. Use pipeline mode when you want the build doctrine and supervisor controls around the team.',
+        tone: 'info',
+      };
 
   return (
     <div className="p-4 space-y-4">
@@ -378,7 +365,18 @@ export default function PipelinePage() {
         <div className="flex flex-col gap-4 rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(24,18,33,0.96),rgba(11,10,16,0.98))] p-5">
           {/* Title + Mode Toggle */}
           <div>
-            <h1 className="text-xl font-bold uppercase tracking-wider text-white">The Dev Squad</h1>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h1 className="text-xl font-bold uppercase tracking-wider text-white">The Dev Squad</h1>
+                <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">Office View</p>
+              </div>
+              <Link
+                href="/squad"
+                className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-300 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+              >
+                Open Squad View
+              </Link>
+            </div>
             {/* Mode Toggle */}
             <div className="mt-2 flex items-center gap-2">
               <div className="flex rounded-lg border border-white/10 bg-white/5">
@@ -405,6 +403,20 @@ export default function PipelinePage() {
                   ))}
                 </select>
               )}
+            </div>
+            <div className={`mt-3 rounded-xl border px-3 py-3 ${
+              modePosture.tone === 'warning'
+                ? 'border-amber-500/30 bg-amber-500/10'
+                : 'border-white/10 bg-white/5'
+            }`}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{modePosture.title}</div>
+                <Badge variant={isPipeline ? (activeSecurityMode === 'strict' ? 'warning' : 'success') : 'neutral'}>
+                  {isPipeline ? 'SUPERVISOR-RUN' : 'YOU-RUN'}
+                </Badge>
+              </div>
+              <p className="mt-2 text-[12px] leading-relaxed text-slate-200">{modePosture.summary}</p>
+              <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{modePosture.detail}</p>
             </div>
             {isPipeline && (
               <div className="mt-3">
@@ -509,7 +521,7 @@ export default function PipelinePage() {
 
           {/* Manual mode: simple label */}
           {!isPipeline && (
-            <div className="text-[10px] uppercase tracking-wider text-blue-400">Manual Mode — You are the orchestrator</div>
+            <div className="text-[10px] uppercase tracking-wider text-blue-400">Manual Mode — direct specialist sessions with Claude permission prompts</div>
           )}
 
           {/* Agent Status — both modes */}
@@ -657,7 +669,7 @@ export default function PipelinePage() {
           <div>
             {isPipeline && (
               <div className="mb-2 text-[10px] uppercase tracking-wider text-slate-500">
-                Ask <span className="font-semibold text-emerald-400">S</span> to start, pause, continue, resume, or stop. Buttons are fallback controls.
+                Ask <span className="font-semibold text-emerald-400">S</span> to start, pause, continue, resume, or stop. Buttons are fallback controls, not the main workflow.
               </div>
             )}
             <div className="flex gap-2">
@@ -747,7 +759,7 @@ export default function PipelinePage() {
               </div>
             )}
             {agentEvents('S').length === 0 && (
-              <p className="pt-16 text-center text-xs tracking-wider text-[#252530]">{isPipeline ? 'Ask S to manage the run, or message any specialist directly.' : 'Chat with the Supervisor'}</p>
+              <p className="pt-16 text-center text-xs tracking-wider text-[#252530]">{isPipeline ? 'Ask S to manage the run, or message any specialist directly.' : 'Chat with any specialist directly. Claude permission prompts still apply in manual mode.'}</p>
             )}
             {agentEvents('S').map((e, i) => (
               <div key={i} className={`rounded px-2 py-1 text-[11px] leading-relaxed ${

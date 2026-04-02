@@ -1,6 +1,6 @@
 # Architecture
 
-The Dev Squad is Claude with its own dev team. One supervisor. Four specialists. Two modes. In **Pipeline Mode**, the supervisor can run the team for you while you keep everything in one place. In **Manual Mode**, you are the orchestrator — five Claude sessions with expertise labels, no automation, you direct everything.
+The Dev Squad is Claude with its own dev team. One supervisor. Four specialists. Two modes. Two interfaces. In **Pipeline Mode**, the supervisor can run the team for you while you keep everything in one place. In **Manual Mode**, you are the orchestrator — five Claude sessions with expertise labels, no automation, you direct everything, while Claude Code's own permission prompts still apply inside those direct sessions. The same team can now be used through both the visual Office View and the simpler Supervisor-first Squad View.
 
 ## The Team
 
@@ -155,7 +155,9 @@ The orchestrator cannot be confused, distracted, or convinced to skip steps.
 
 ## The Viewer
 
-A Next.js app that polls `pipeline-events.json` every 400ms and renders:
+A Next.js app that polls `pipeline-events.json` every 400ms and renders two interfaces for the same team runtime:
+
+### Office View
 
 - Pixel art office scene with 5 agents at desks
 - Live feed of all events
@@ -166,6 +168,13 @@ A Next.js app that polls `pipeline-events.json` every 400ms and renders:
 - Dashboard with phase progress, token usage, cost
 - Per-panel chat inputs for direct agent communication
 - START/STOP/Reset controls
+
+### Squad View
+
+- Supervisor-first chat workspace without the office UI
+- Direct specialist tabs for Planner / Reviewer / Coder / Tester
+- The same supervisor summaries, execution-path status, approvals, and fallback controls
+- The same pipeline/manual team state underneath
 
 API routes handle:
 - `POST /api/chat` — spawns a claude session for direct chat (Phase 0 or post-build)
@@ -233,6 +242,7 @@ User hits RESET
 In manual mode, the orchestrator does not exist. The user is the orchestrator.
 
 - **No pipeline, no phases, no automation.** 5 Claude sessions with one-line expertise labels.
+- **Claude permission prompts still apply.** Manual mode is looser than pipeline mode, but it is not unguarded.
 - **State lives in `~/Builds/.manual/manual-state.json`** — separate from pipeline state.
 - **No role files.** Agents get a one-line system prompt on first message:
   - A: "You specialize in software planning and architecture."

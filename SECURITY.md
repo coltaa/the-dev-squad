@@ -14,6 +14,12 @@ This project is provided `AS IS` under the MIT license. Users are responsible fo
 
 In pipeline/team-run mode, team permissions are enforced by a `PreToolUse` hook (`pipeline/.claude/hooks/approval-gate.sh`), not by prompts. The hook runs before every tool call for every team member in that mode. Prompts provide context — the hook provides guardrails.
 
+Manual mode is different:
+
+- the pipeline hook model does not define the workflow there
+- the user is directly orchestrating the sessions
+- Claude Code's own permission prompts still apply, so manual mode is looser than pipeline mode, not unguarded
+
 Run `pnpm test:hook` after changing the orchestrator or hook rules. It verifies the expected role/tool contract so hook drift is caught before it reaches a live team run.
 
 ## What the Hook Catches
