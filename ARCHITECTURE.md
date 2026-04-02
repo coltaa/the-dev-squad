@@ -1,67 +1,67 @@
 # Architecture
 
-The Dev Squad is Claude with its own dev team. One supervisor. Four specialists. Two modes. In **Pipeline Mode**, the supervisor can run the team for you while you keep everything in one place. In **Manual Mode**, you are the orchestrator — 5 Claude sessions with expertise labels, no automation, you direct everything.
+The Dev Squad is Claude with its own dev team. One supervisor. Four specialists. Two modes. In **Pipeline Mode**, the supervisor can run the team for you while you keep everything in one place. In **Manual Mode**, you are the orchestrator — five Claude sessions with expertise labels, no automation, you direct everything.
 
-## The Agents
+## The Team
 
-- **S — Supervisor**: The operator/recovery partner. Reads broadly, explains what the team is doing, and helps the user decide when to wait, stop, retry, or recover.
-- **A — Planner**: Chats with the user, researches, writes the build plan, and confirms completion at the end
-- **B — Plan Reviewer**: Pokes holes in the plan until there are none left
-- **C — Coder**: Follows the approved plan and writes the code
-- **D — Code Reviewer + Tester**: Reviews the code against the plan, then tests it
+- **Supervisor (`S`)**: The operator/recovery partner. Reads broadly, explains what the team is doing, and helps the user decide when to wait, stop, retry, or recover.
+- **Planner (`A`)**: Chats with the user, researches, writes the build plan, and confirms completion at the end
+- **Plan Reviewer (`B`)**: Pokes holes in the plan until there are none left
+- **Coder (`C`)**: Follows the approved plan and writes the code
+- **Tester (`D`)**: Reviews the code against the plan, then tests it
 
 ## Product Direction
 
 The product is moving toward "give Claude a dev team":
 
-- `S` is the human-facing supervisor
-- `A`, `B`, `C`, and `D` are the worker specialists
+- the Supervisor is the human-facing front door
+- the Planner, Plan Reviewer, Coder, and Tester are the worker specialists
 - the whole team follows the same doctrine: `build-plan-template.md`, `checklist.md`, and the locked `plan.md`
 
-Today, pipeline mode can now start from **S** as well as direct A chat. `S` has the first real control-plane actions: saved-session recovery for A/B planning-review turns, `plan-only`, `stop after review`, `continue build` from an approved plan, and chat-triggered start/stop/resume actions. The next implementation step is to keep moving authority toward `S` while leaving the actual execution path deterministic in host/orchestrator code. The concrete build plan for that transition lives in [SUPERVISOR-BUILD-PLAN.md](SUPERVISOR-BUILD-PLAN.md).
+Today, pipeline mode can now start from the **Supervisor** as well as direct planner chat. The supervisor has the first real control-plane actions: saved-session recovery for planning/review turns, `plan-only`, `stop after review`, `continue build` from an approved plan, and chat-triggered start/stop/resume actions. The next implementation step is to keep moving authority toward the supervisor while leaving the actual execution path deterministic in host/orchestrator code. The concrete build plan for that transition lives in [SUPERVISOR-BUILD-PLAN.md](SUPERVISOR-BUILD-PLAN.md).
 
-When the user chats with `S` in pipeline mode, the chat route now injects a live team snapshot: current phase, pipeline status, run goal, active turn, recent events, pending approvals, and recommended control actions. Before a run exists, `S` captures the concept locally and waits for an explicit start command instead of freelancing. That makes `S` much closer to a real team manager instead of a generic diagnostic assistant.
+When the user chats with the supervisor in pipeline mode, the chat route now injects a live team snapshot: current phase, pipeline status, run goal, active turn, recent events, pending approvals, and recommended control actions. Before a run exists, the supervisor captures the concept locally and waits for an explicit start command instead of freelancing. That makes the supervisor much closer to a real team manager instead of a generic diagnostic assistant.
 
 ## The Flow
 
 ### Phase 0: Concept
 
-1. The **user** can chat with **S** or **A** in the viewer. The preferred path is to talk to **S** and let **S** manage the team.
-2. Before a run exists, **S** captures the concept locally in staging instead of freelancing on the filesystem.
-3. **S** or **A** gathers the concept and constraints.
+1. The **user** can chat with the **Supervisor** or the **Planner** in the viewer. The preferred path is to talk to the supervisor and let the supervisor manage the team.
+2. Before a run exists, the **Supervisor** captures the concept locally in staging instead of freelancing on the filesystem.
+3. The **Supervisor** or the **Planner** gathers the concept and constraints.
 4. Chat happens in a staging area (`~/Builds/.staging/`). No project directory created yet.
-5. When the user asks **S** to start, or uses the fallback **START** button, staging moves to a real project dir and the pipeline runs according to the selected goal. In strict mode, the UI can still surface Bash approvals later in the run.
+5. When the user asks the **Supervisor** to start, or uses the fallback **START** button, staging moves to a real project dir and the pipeline runs according to the selected goal. In strict mode, the UI can still surface Bash approvals later in the run.
 
 ### Phase 1: Planning
 
-5. **A** reads `build-plan-template.md` — A's playbook.
-6. **A** completes the planning checklist — research, write, verify, context, one self-review pass.
-7. **A** writes the plan to `plan.md` with complete, copy-pasteable code for every file.
-8. **A** self-reviews once, then hands the plan to **B**. **B** is the formal external review gate.
+5. The **Planner** reads `build-plan-template.md` — the planning playbook.
+6. The **Planner** completes the planning checklist — research, write, verify, context, one self-review pass.
+7. The **Planner** writes the plan to `plan.md` with complete, copy-pasteable code for every file.
+8. The **Planner** self-reviews once, then hands the plan to the **Plan Reviewer**. The reviewer is the formal external review gate.
 
 ### Phase 1b: Plan Review
 
-9. **B** reads the plan and sends structured questions back to **A**.
-10. **A** answers with verified information and updates the plan.
-11. This loops until **B** is fully satisfied. No round limit.
-12. **B** approves. The plan is locked — no agent can modify it from this point.
+9. The **Plan Reviewer** reads the plan and sends structured questions back to the **Planner**.
+10. The **Planner** answers with verified information and updates the plan.
+11. This loops until the **Plan Reviewer** is fully satisfied. No round limit.
+12. The **Plan Reviewer** approves. The plan is locked — no agent can modify it from this point.
 13. If the supervisor selected **Plan Only** or armed **Stop After Review**, the pipeline pauses here and waits for an explicit continue command.
 
 ### Phase 2: Coding
 
-14. **C** reads the locked plan and builds exactly what it says.
+14. The **Coder** reads the locked plan and builds exactly what it says.
 15. No improvising, no interpreting, no "improving."
 
 ### Phase 3: Code Review
 
-16. **D** reads the plan and the code. Checks: does the code match the plan?
-17. If **D** has issues, sends them to **C**. **C** fixes, sends back.
-18. Loops until **D** is satisfied with the code.
+16. The **Tester** reads the plan and the code. Checks: does the code match the plan?
+17. If the **Tester** has issues, sends them to the **Coder**. The coder fixes and sends back.
+18. Loops until the **Tester** is satisfied with the code.
 
 ### Phase 4: Testing
 
-19. **D** runs the code. Tests it.
-20. If tests fail, **D** sends failures to **C**. **C** fixes, **D** tests again.
+19. The **Tester** runs the code and tests it.
+20. If tests fail, the **Tester** sends failures to the **Coder**. The coder fixes and the tester tests again.
 21. Loops until all tests pass.
 
 ### Phase 5: Deploy
@@ -74,20 +74,20 @@ LLMs ignore prompt instructions. An agent told "only write plan.md" will write c
 
 Restrictions are enforced by a `PreToolUse` hook (`pipeline/.claude/hooks/approval-gate.sh`) that prevents agents from accidentally exceeding their role. The hook is a guardrail, not a sandbox — see [SECURITY.md](SECURITY.md) for the threat model, known limitations, and a matrix of what is fixable in-hook vs what requires design changes or OS-level isolation. The hook reads the `PIPELINE_AGENT` environment variable and gates every tool call:
 
-| Agent | Write | Bash | Agent Tool |
-|-------|-------|------|------------|
-| **A** (Planner) | `plan.md` only in the current project | Blocked | Blocked |
-| **B** (Reviewer) | Blocked | Blocked | Blocked |
-| **C** (Coder) | Current project only (except plan.md) | Safe=auto, dangerous=approval | Blocked |
-| **D** (Tester) | Blocked | Safe=auto, dangerous=approval | Blocked |
-| **S** (Supervisor) | `~/Builds/` only (no `.claude/`) | Yes (restricted) | Blocked |
+| Team Member | Write | Bash | Agent Tool |
+|-------------|-------|------|------------|
+| **Planner (`A`)** | `plan.md` only in the current project | Blocked | Blocked |
+| **Plan Reviewer (`B`)** | Blocked | Blocked | Blocked |
+| **Coder (`C`)** | Current project only (except plan.md) | Safe=auto, dangerous=approval | Blocked |
+| **Tester (`D`)** | Blocked | Safe=auto, dangerous=approval | Blocked |
+| **Supervisor (`S`)** | `~/Builds/` only (no `.claude/`) | Yes (restricted) | Blocked |
 
 Additional protections:
-- `Write`/`Edit`/`NotebookEdit` are jailed to the active project for A/C and blocked for B/D
+- `Write`/`Edit`/`NotebookEdit` are jailed to the active project for the planner/coder and blocked for the reviewer/tester
 - Pipeline sessions set `CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1`, so Bash `cd` does not persist into later file-edit tool calls
-- Plan is locked after B approves
+- Plan is locked after the plan reviewer approves
 - Agent tool blocked for all agents (prevents recursive spawning)
-- Strict mode requires approval for every Bash call from C and D
+- Strict mode requires approval for every Bash call from the coder and tester
 - `--permission-mode auto` adds Claude's AI safety classifier on top
 
 Roadmap:

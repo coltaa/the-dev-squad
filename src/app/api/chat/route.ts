@@ -6,7 +6,7 @@ import { createInterface } from 'readline';
 import { NextRequest, NextResponse } from 'next/server';
 import { EMPTY_RUNTIME } from '@/lib/pipeline-runtime';
 import { readPendingApproval } from '@/lib/pipeline-approval';
-import { buildSupervisorSnapshot } from '@/lib/pipeline-supervisor';
+import { buildSupervisorSnapshot, getSupervisorRecommendation } from '@/lib/pipeline-supervisor';
 import { buildSupervisorConceptReply, looksLikeStatusQuestion } from '@/lib/supervisor-concept';
 import {
   appendPipelineEvent,
@@ -114,6 +114,32 @@ function appendUserEvent(state: Record<string, unknown>, agent: string, message:
     text: `You: ${message}`,
   });
   state.events = events;
+}
+
+function appendSupervisorFailureAndGuidance(
+  state: Record<string, unknown>,
+  file: string,
+  errorText: string
+) {
+  const events = (state.events as Array<Record<string, unknown>>) || [];
+  events.push({
+    time: new Date().toISOString(),
+    agent: 'S',
+    phase: state.currentPhase || 'concept',
+    type: 'failure',
+    text: errorText,
+  });
+
+  const recommendation = getSupervisorRecommendation(state, null);
+  events.push({
+    time: new Date().toISOString(),
+    agent: 'S',
+    phase: state.currentPhase || 'concept',
+    type: 'text',
+    text: `${recommendation.title}: ${recommendation.detail}${recommendation.chatCommand ? ` Try: "${recommendation.chatCommand}".` : ''}`,
+  });
+  state.events = events;
+  writeState(file, state);
 }
 
 // ── Shared: stream claude output into a state file ──────────────────
@@ -338,12 +364,11 @@ function handlePipeline(
         });
 
         if (!result.success) {
-          appendPipelineEvent(controlProjectDir, {
-            agent: 'S',
-            phase: String(controlState.currentPhase || 'concept'),
-            type: 'failure',
-            text: result.error || 'Supervisor could not start the run',
-          });
+          appendSupervisorFailureAndGuidance(
+            controlState,
+            controlEventsFile,
+            result.error || 'Supervisor could not start the run'
+          );
           return NextResponse.json({ success: false, error: result.error || 'Could not start pipeline' });
         }
 
@@ -369,12 +394,11 @@ function handlePipeline(
       if (intent.action === 'set-stop-after-review') {
         const result = setStopAfterReview(intent.enabled, controlProjectDir === STAGING_DIR ? undefined : controlProjectDir);
         if (!result.success) {
-          appendPipelineEvent(controlProjectDir, {
-            agent: 'S',
-            phase: String(controlState.currentPhase || 'concept'),
-            type: 'failure',
-            text: result.error || 'Supervisor could not update stop-after-review',
-          });
+          appendSupervisorFailureAndGuidance(
+            controlState,
+            controlEventsFile,
+            result.error || 'Supervisor could not update stop-after-review'
+          );
           return NextResponse.json({ success: false, error: result.error || 'Could not update supervisor control' });
         }
 
@@ -389,12 +413,11 @@ function handlePipeline(
       if (intent.action === 'resume-run') {
         const result = resumePipelineRun(controlProjectDir === STAGING_DIR ? undefined : controlProjectDir);
         if (!result.success) {
-          appendPipelineEvent(controlProjectDir, {
-            agent: 'S',
-            phase: String(controlState.currentPhase || 'concept'),
-            type: 'failure',
-            text: result.error || 'Supervisor could not resume the run',
-          });
+          appendSupervisorFailureAndGuidance(
+            controlState,
+            controlEventsFile,
+            result.error || 'Supervisor could not resume the run'
+          );
           return NextResponse.json({ success: false, error: result.error || 'Could not resume pipeline' });
         }
 

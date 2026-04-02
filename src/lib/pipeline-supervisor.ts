@@ -33,6 +33,14 @@ interface PipelineStateLike {
   events?: PipelineEventLike[];
 }
 
+export interface SupervisorRecommendation {
+  title: string;
+  detail: string;
+  actionLabel?: string;
+  chatCommand?: string;
+  severity: 'neutral' | 'info' | 'warning' | 'success';
+}
+
 function formatAgentStatuses(agentStatus: Record<string, string> | undefined): string {
   if (!agentStatus) return 'A=idle, B=idle, C=idle, D=idle, S=idle';
   return ['A', 'B', 'C', 'D', 'S']
@@ -48,15 +56,31 @@ function formatRecentEvents(events: PipelineEventLike[] | undefined, limit: numb
     .join('\n');
 }
 
-export function buildSupervisorSnapshot(
+function findLatestEvent(
+  events: PipelineEventLike[] | undefined,
+  types: string[]
+): PipelineEventLike | null {
+  if (!events || events.length === 0) return null;
+  for (let i = events.length - 1; i >= 0; i -= 1) {
+    if (types.includes(events[i].type)) return events[i];
+  }
+  return null;
+}
+
+export function getSupervisorRecommendation(
   state: PipelineStateLike,
   pendingApproval: PendingApproval | null
-): string {
+): SupervisorRecommendation {
   const activeTurn = state.runtime?.activeTurn;
-  const recommendedActions: string[] = [];
+  const latestFailure = findLatestEvent(state.events, ['failure', 'permission_denied', 'issue']);
 
   if (pendingApproval?.approved === null) {
-    recommendedActions.push(`A pending approval exists for ${pendingApproval.agent} ${pendingApproval.tool}: ${pendingApproval.description}`);
+    return {
+      title: `Approval needed for ${pendingApproval.agent}`,
+      detail: `${pendingApproval.tool} is waiting on a decision: ${pendingApproval.description}`,
+      actionLabel: 'Review approval card',
+      severity: 'warning',
+    };
   }
 
   if (
@@ -64,7 +88,13 @@ export function buildSupervisorSnapshot(
     state.currentPhase === 'plan-review' &&
     state.buildComplete !== true
   ) {
-    recommendedActions.push('The plan is approved and the run is paused. Recommend CONTINUE BUILD if the user wants coding to start.');
+    return {
+      title: 'Plan approved, waiting on you',
+      detail: 'B approved the plan and the run paused cleanly before coding. Continue when you want C to start building.',
+      actionLabel: 'Continue build',
+      chatCommand: 'continue build',
+      severity: 'info',
+    };
   }
 
   if (
@@ -72,7 +102,15 @@ export function buildSupervisorSnapshot(
     (activeTurn.agent === 'A' || activeTurn.agent === 'B') &&
     (activeTurn.phase === 'planning' || activeTurn.phase === 'plan-review')
   ) {
-    recommendedActions.push('A recoverable stalled planning/review turn exists. Recommend RESUME STALLED RUN.');
+    return {
+      title: `Recoverable ${activeTurn.agent} stall`,
+      detail: activeTurn.promptSummary
+        ? `The ${activeTurn.phase} turn looks stalled. Resume it from the saved session instead of resetting the run.`
+        : 'A planning/review turn looks stalled. Resume it from the saved session instead of resetting the run.',
+      actionLabel: 'Resume stalled run',
+      chatCommand: 'resume stalled run',
+      severity: 'warning',
+    };
   }
 
   if (
@@ -80,8 +118,58 @@ export function buildSupervisorSnapshot(
     state.runGoal === 'full-build' &&
     (state.currentPhase === 'planning' || state.currentPhase === 'plan-review')
   ) {
-    recommendedActions.push('If the user wants to stop before coding, STOP AFTER REVIEW is available right now.');
+    return {
+      title: 'Run is moving normally',
+      detail: 'The team is still before coding. If you want to pause after B approves the plan, ask S to stop after review.',
+      actionLabel: 'Stop after review',
+      chatCommand: 'stop after review',
+      severity: 'info',
+    };
   }
+
+  if (state.buildComplete) {
+    return {
+      title: 'Build complete',
+      detail: 'The team finished successfully. Inspect the output or ask a specialist for follow-up changes.',
+      actionLabel: 'Review output',
+      severity: 'success',
+    };
+  }
+
+  if (state.pipelineStatus === 'idle' && state.concept) {
+    return {
+      title: 'Concept captured',
+      detail: 'The idea is staged and ready. Tell S to start planning or start the full build when you are ready.',
+      actionLabel: 'Start planning',
+      chatCommand: 'start planning',
+      severity: 'info',
+    };
+  }
+
+  if (state.pipelineStatus === 'failed' || (latestFailure && state.pipelineStatus !== 'idle')) {
+    return {
+      title: 'Something needs attention',
+      detail: latestFailure?.text || 'The last run surfaced an issue. Ask S what happened or stop/reset the run if it is wedged.',
+      actionLabel: 'Ask S what happened',
+      chatCommand: 'What went wrong, and what should we do next?',
+      severity: 'warning',
+    };
+  }
+
+  return {
+    title: 'Tell S what to build',
+    detail: 'No run is active yet. Describe the build to S, then start planning when the concept looks right.',
+    actionLabel: 'Describe concept',
+    severity: 'neutral',
+  };
+}
+
+export function buildSupervisorSnapshot(
+  state: PipelineStateLike,
+  pendingApproval: PendingApproval | null
+): string {
+  const activeTurn = state.runtime?.activeTurn;
+  const recommendation = getSupervisorRecommendation(state, pendingApproval);
 
   return [
     '[LIVE TEAM SNAPSHOT]',
@@ -102,10 +190,8 @@ export function buildSupervisorSnapshot(
       : 'Pending approval: none',
     'Recent events:',
     formatRecentEvents(state.events),
-    'Recommended supervisor actions:',
-    recommendedActions.length > 0
-      ? recommendedActions.map((action) => `- ${action}`).join('\n')
-      : '- No special control action recommended right now.',
+    'Recommended supervisor action:',
+    `- ${recommendation.title}: ${recommendation.detail}${recommendation.chatCommand ? ` (try: "${recommendation.chatCommand}")` : ''}`,
     '[END SNAPSHOT]',
   ].join('\n');
 }

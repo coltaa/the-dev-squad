@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Badge } from '@/components/shared/Badge';
 import { LunarOfficeScene } from '@/components/mission/LunarOfficeScene';
 import { canAutoResumeTurn } from '@/lib/pipeline-runtime';
+import { getSupervisorRecommendation } from '@/lib/pipeline-supervisor';
 import { usePipelineState, type AgentId, type AppMode, type PendingApproval, type RunGoal, type SecurityMode } from '@/lib/use-pipeline';
 
 const AGENT_NAMES: Record<AgentId, string> = {
@@ -279,6 +280,7 @@ export default function PipelinePage() {
     canAutoResumeTurn(activeTurn.agent, activeTurn.phase)
   );
   const canContinueApprovedPlan = pipelinePaused && phase === 'plan-review' && !!state.events.some((event) => event.text.includes('PLAN APPROVED'));
+  const supervisorRecommendation = isPipeline ? getSupervisorRecommendation(state, pendingApproval) : null;
 
   return (
     <div className="p-4 space-y-4">
@@ -558,6 +560,28 @@ export default function PipelinePage() {
                 <div>
                   <div className="mb-1 text-[10px] uppercase tracking-wider text-slate-500">Concept</div>
                   <p className="text-xs leading-relaxed text-slate-400">{state.concept}</p>
+                </div>
+              )}
+
+              {supervisorRecommendation && (
+                <div>
+                  <div className="mb-1 text-[10px] uppercase tracking-wider text-slate-500">Suggested Next Action</div>
+                  <div className={`rounded-lg border px-3 py-2 text-[11px] ${
+                    supervisorRecommendation.severity === 'warning'
+                      ? 'border-amber-500/40 bg-amber-500/10 text-amber-200'
+                      : supervisorRecommendation.severity === 'success'
+                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
+                      : 'border-white/10 bg-white/5 text-slate-300'
+                  }`}>
+                    <div className="font-semibold">{supervisorRecommendation.title}</div>
+                    <p className="mt-1 leading-relaxed">{supervisorRecommendation.detail}</p>
+                    {(supervisorRecommendation.actionLabel || supervisorRecommendation.chatCommand) && (
+                      <p className="mt-2 text-[10px] uppercase tracking-wider text-slate-400">
+                        {supervisorRecommendation.actionLabel || 'Suggested action'}
+                        {supervisorRecommendation.chatCommand ? ` · try "${supervisorRecommendation.chatCommand}"` : ''}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </>

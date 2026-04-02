@@ -21,7 +21,9 @@ const pausedSnapshot = buildSupervisorSnapshot(
 
 assert.match(pausedSnapshot, /Run goal: plan-only/);
 assert.match(pausedSnapshot, /Pipeline status: paused/);
-assert.match(pausedSnapshot, /Recommend CONTINUE BUILD/i);
+assert.match(pausedSnapshot, /Recommended supervisor action:/i);
+assert.match(pausedSnapshot, /Plan approved, waiting on you/i);
+assert.match(pausedSnapshot, /try: "continue build"/i);
 
 const stalledSnapshot = buildSupervisorSnapshot(
   {
@@ -50,6 +52,27 @@ const stalledSnapshot = buildSupervisorSnapshot(
 );
 
 assert.match(stalledSnapshot, /Active turn: A \/ planning \/ stalled/);
-assert.match(stalledSnapshot, /RESUME STALLED RUN/);
+assert.match(stalledSnapshot, /Recoverable A stall/i);
+assert.match(stalledSnapshot, /try: "resume stalled run"/i);
+
+const idleFailureSnapshot = buildSupervisorSnapshot(
+  {
+    concept: '',
+    currentPhase: 'concept',
+    pipelineStatus: 'idle',
+    securityMode: 'fast',
+    runGoal: 'full-build',
+    stopAfterPhase: 'none',
+    activeAgent: '',
+    buildComplete: false,
+    agentStatus: { A: 'idle', B: 'idle', C: 'idle', D: 'idle', S: 'idle' },
+    runtime: { activeTurn: null },
+    events: [{ time: '2026-04-02T00:00:00.000Z', agent: 'S', phase: 'concept', type: 'failure', text: 'No build concept found yet.' }],
+  },
+  null
+);
+
+assert.match(idleFailureSnapshot, /Tell S what to build/i);
+assert.doesNotMatch(idleFailureSnapshot, /Something needs attention/i);
 
 console.log('supervisor snapshot checks passed');

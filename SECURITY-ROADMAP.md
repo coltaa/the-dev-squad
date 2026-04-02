@@ -1,6 +1,6 @@
 # Security Roadmap
 
-This document is the implementation plan for moving The Dev Squad from "guardrails against accidental lane drift" toward stronger user protection.
+This document is the implementation plan for moving The Dev Squad from "guardrails around a supervisor-led dev team" toward stronger user protection.
 
 The current hook-based model is useful, but it is not a security boundary against an adversarial agent. The path forward is phased:
 
@@ -10,31 +10,31 @@ The current hook-based model is useful, but it is not a security boundary agains
 
 ## Current Baseline
 
-- Default pipeline mode is autonomous and optimized for speed.
-- `pipeline/.claude/hooks/approval-gate.sh` constrains tool use, but it lives in an agent-writable tree and cannot fully control agents that still have Bash.
+- Fast mode is the default execution mode and is optimized for speed.
+- `pipeline/.claude/hooks/approval-gate.sh` constrains tool use, but it lives in an agent-writable tree and cannot fully control team members that still have Bash.
 - `CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1` mitigates `cd`-then-`Write` drift, but it does not make Bash read-only.
-- Remaining known gaps are documented in [SECURITY.md](SECURITY.md): Bash-mediated writes, indirect execution, hardlinks, TOCTOU, and accepted `WebSearch` egress for A.
+- Remaining known gaps are documented in [SECURITY.md](SECURITY.md): Bash-mediated writes, indirect execution, hardlinks, TOCTOU, and accepted planning/review web egress.
 
 ## Target Modes
 
 | Mode | Goal | User Experience | Residual Risk |
 |------|------|-----------------|---------------|
 | **Fast** | Keep the current autonomous workflow | Safe Bash stays automatic, obviously dangerous Bash asks for approval | Guardrails only, not strong containment |
-| **Strict** | Put a human in the loop for all C/D Bash | Every Bash call from C and D requires approval | Better practical safety, but still not a true sandbox |
+| **Strict** | Put a human in the loop for all coder/tester Bash | Every Bash call from the Coder and Tester requires approval | Better practical safety, but still not a true sandbox |
 | **Isolated** | Stronger containment for hostile or jailbreak-prone agents | Agents run inside per-project sandboxes with limited mounts and network | Much stronger, but still depends on the sandbox design and approval policy |
 
 ## Phase `v0.3`: Strict Mode
 
 ### Goal
 
-Make agent C and D Bash usage human-mediated instead of pattern-mediated.
+Make coder/tester Bash usage human-mediated instead of pattern-mediated.
 
 ### Status
 
 Shipped in `v0.3.0`:
 
 - Pipeline runs can now choose `Fast` or `Strict`
-- Strict mode asks for approval on every C/D Bash call
+- Strict mode asks for approval on every coder/tester Bash call
 - The selected mode is persisted in pipeline state and passed through spawned sessions
 - Approval decisions are tied to explicit request records instead of "latest project wins"
 - Approved Bash commands receive a one-time grant for the exact command that was approved
@@ -45,27 +45,31 @@ Still pending inside `v0.3`:
 
 ### Why This Comes First
 
-Strict mode closes the biggest day-to-day bypass class without forcing a container project first. It also fits the current product: the UI already has an approval surface, and the orchestrator already tracks project state.
+Strict mode closes the biggest day-to-day bypass class without forcing a container project first. It also fits the current product: the UI already has an approval surface, and the supervisor/team workflow already tracks project state.
 
-### Deliverables
+### What Shipped in `v0.3`
 
-- Add a visible security mode selector in the viewer for pipeline runs: `Fast` or `Strict`
-- Persist the selected mode in pipeline state so the UI, orchestrator, and approvals all agree on the current policy
-- Pass a strict-mode flag through all pipeline Claude spawn paths
-- In strict mode, require approval for every Bash call from agents C and D
-- Show the full pending command, agent, cwd, and project in the approval UI
-- Log approval requests and decisions into `pipeline-events.json`
+- Visible security mode selector in the viewer for pipeline runs: `Fast` or `Strict`
+- Selected mode persisted in pipeline state so the UI, orchestrator, and approvals agree on the current policy
+- Strict-mode flag passed through all pipeline Claude spawn paths
+- In strict mode, every Bash call from the Coder and Tester requires approval
+- Approval UI shows the pending command, agent, cwd, and project
+- Approval requests and decisions are logged into `pipeline-events.json`
 
-### Files To Change
+### Key Files
 
 - [src/app/page.tsx](/Users/johnknopf/Projects/the-dev-squad/src/app/page.tsx) — security mode control and clearer approval messaging
 - [src/lib/use-pipeline.ts](/Users/johnknopf/Projects/the-dev-squad/src/lib/use-pipeline.ts) — include security mode in start requests and approval actions
 - [src/app/api/start-pipeline/route.ts](/Users/johnknopf/Projects/the-dev-squad/src/app/api/start-pipeline/route.ts) — persist selected mode into the project state and orchestrator launch
 - [src/app/api/chat/route.ts](/Users/johnknopf/Projects/the-dev-squad/src/app/api/chat/route.ts) — keep direct agent sessions aligned with the selected mode where applicable
 - [pipeline/orchestrator.ts](/Users/johnknopf/Projects/the-dev-squad/pipeline/orchestrator.ts) — pass the mode through agent env/config and emit approval events
-- [pipeline/.claude/hooks/approval-gate.sh](/Users/johnknopf/Projects/the-dev-squad/pipeline/.claude/hooks/approval-gate.sh) — treat C/D Bash as approval-gated in strict mode
+- [pipeline/.claude/hooks/approval-gate.sh](/Users/johnknopf/Projects/the-dev-squad/pipeline/.claude/hooks/approval-gate.sh) — treat coder/tester Bash as approval-gated in strict mode
 - [src/app/api/pending/route.ts](/Users/johnknopf/Projects/the-dev-squad/src/app/api/pending/route.ts) — stop relying on "latest project" and return explicit pending requests
 - [src/app/api/approve/route.ts](/Users/johnknopf/Projects/the-dev-squad/src/app/api/approve/route.ts) — approve a specific request, not whichever project updated last
+
+### Remaining `v0.3.x` Polish
+
+- Improve the approval UI to show stronger request identity and history
 
 ### Important Design Constraint
 
@@ -80,7 +84,7 @@ The current approval API finds the "latest project" by scanning `~/Builds/`. Tha
 
 ### Acceptance Criteria
 
-- In strict mode, C and D never run Bash without a user decision
+- In strict mode, the Coder and Tester never run Bash without a user decision
 - Approval decisions are tied to an explicit request, not inferred from the newest project on disk
 - The UI shows what is being approved before the command runs
 - Denials are visible in the event log
@@ -95,14 +99,14 @@ Move agent execution into an OS-enforced sandbox so Bash no longer has ambient a
 ### Deliverables
 
 - Introduce a runner abstraction so the orchestrator and chat API stop spawning `claude` directly
-- Run each pipeline agent inside a per-project container or equivalent sandbox
+- Run each team member inside a per-project container or equivalent sandbox
 - Mount only the active project directory as writable
 - Keep hooks, settings, and policy outside the project mount or mount them read-only
 - Give each sandbox an ephemeral home directory instead of the host user's real home
 - Add per-agent network profiles:
-  - A: web access only if explicitly allowed
-  - C/D: default-deny network unless a workflow needs it
-  - S: broader access only if intentionally enabled
+  - Planner: web access only if explicitly allowed
+  - Coder/Tester: default-deny network unless a workflow needs it
+  - Supervisor: broader access only if intentionally enabled
 
 ### Files To Change
 
@@ -113,8 +117,8 @@ Move agent execution into an OS-enforced sandbox so Bash no longer has ambient a
 
 ### Acceptance Criteria
 
-- Agent C cannot write to a sibling build even with Bash redirection
-- Agent D cannot write to project files unless policy explicitly permits it
+- The Coder cannot write to a sibling build even with Bash redirection
+- The Tester cannot write to project files unless policy explicitly permits it
 - `.claude` policy files are no longer writable from inside agent execution environments
 - Host files such as `~/.ssh`, shell profiles, and unrelated repos are not present inside the sandbox
 
