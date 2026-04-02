@@ -15,7 +15,7 @@
  * Then open http://localhost:3456
  */
 
-import { spawn, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, copyFileSync, existsSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { join, resolve, basename } from 'node:path';
@@ -41,6 +41,7 @@ import {
   summarizePrompt,
   type PipelineRuntimeState,
 } from '../src/lib/pipeline-runtime.ts';
+import { createRunner } from './runner.ts';
 
 // ── Config ──────────────────────────────────────────────────────────
 
@@ -62,6 +63,8 @@ const AGENT_EFFORT: Record<string, string> = {
   D: 'max',    // Tester — must catch bugs, verify correctness
   S: 'high',   // Supervisor — not currently used
 };
+
+const runner = createRunner();
 
 // ── CLI Args ────────────────────────────────────────────────────────
 //
@@ -370,30 +373,16 @@ async function runClaudeTurn(
   return new Promise((resolve, reject) => {
     const safePrompt = prompt.startsWith('-') ? 'User says: ' + prompt : prompt;
     const effort = AGENT_EFFORT[agent] || 'high';
-    const args: string[] = [
-      '-p', safePrompt,
-      '--system-prompt-file', opts.role,
-      '--permission-mode', 'auto',
-      '--model', MODEL,
-      '--effort', effort,
-      '--output-format', 'stream-json',
-      '--verbose',
-    ];
-
-    if (opts.resume) args.push('--resume', opts.resume);
-    if (opts.jsonSchema) args.push('--json-schema', JSON.stringify(opts.jsonSchema));
-
-    const child = spawn('claude', args, {
-      cwd: projectDir,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      env: {
-        ...process.env,
-        PIPELINE_AGENT: agent,
-        PIPELINE_SECURITY_MODE: state.securityMode,
-        // Reset Claude's working directory after each Bash command so a `cd`
-        // does not persist into later Write/Edit tool calls.
-        CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR: '1',
-      },
+    const child = runner.spawn({
+      prompt: safePrompt,
+      projectDir,
+      model: MODEL,
+      roleFile: opts.role,
+      resume: opts.resume,
+      jsonSchema: opts.jsonSchema,
+      effort,
+      pipelineAgent: agent,
+      securityMode: state.securityMode,
     });
 
     startActiveTurn(agent, safePrompt, opts.autoResumeCount || 0, opts.resume);

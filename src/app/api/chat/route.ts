@@ -1,9 +1,9 @@
-import { spawn } from 'child_process';
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync } from 'fs';
 import { join, resolve, basename } from 'path';
 import { homedir } from 'os';
 import { createInterface } from 'readline';
 import { NextRequest, NextResponse } from 'next/server';
+import { createRunner, type PipelineAgentId, type RunnerOptions } from '../../../../pipeline/runner.ts';
 import { EMPTY_RUNTIME } from '@/lib/pipeline-runtime';
 import { readPendingApproval } from '@/lib/pipeline-approval';
 import { buildSupervisorSnapshot, getSupervisorRecommendation } from '@/lib/pipeline-supervisor';
@@ -39,6 +39,8 @@ const MANUAL_PROMPTS: Record<string, string> = {
   D: 'You specialize in testing and debugging.',
   S: 'You help oversee and diagnose issues.',
 };
+
+const runner = createRunner();
 
 function getManualState(): Record<string, unknown> {
   const eventsFile = join(MANUAL_DIR, 'manual-state.json');
@@ -145,21 +147,13 @@ function appendSupervisorFailureAndGuidance(
 // ── Shared: stream claude output into a state file ──────────────────
 
 function streamClaude(
-  args: string[],
-  cwd: string,
-  env: NodeJS.ProcessEnv,
+  opts: RunnerOptions,
   eventsFile: string,
   agent: string,
   sessionId: string,
 ): Promise<NextResponse> {
   return new Promise<NextResponse>((resolveResponse) => {
-    const child = spawn('claude', args, {
-      cwd,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      // Reset Claude's working directory after each Bash command so a `cd`
-      // does not persist into later Write/Edit tool calls.
-      env: { ...env, CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR: '1' },
-    });
+    const child = runner.spawn(opts);
 
     const rl = createInterface({ input: child.stdout });
     let newSessionId = sessionId;
@@ -278,20 +272,18 @@ function handleManual(agent: string, message: string, model: string) {
 
   const safeMessage = message.startsWith('-') ? 'User says: ' + message : message;
 
-  const args: string[] = [
-    '-p', safeMessage,
-    '--permission-mode', 'auto',
-    '--model', model,
-    '--output-format', 'stream-json',
-    '--verbose',
-  ];
-  if (sessionId) {
-    args.push('--resume', sessionId);
-  } else {
-    args.push('--system-prompt', MANUAL_PROMPTS[agent] || MANUAL_PROMPTS.A);
-  }
-
-  return streamClaude(args, MANUAL_DIR, { ...process.env }, eventsFile, agent, sessionId);
+  return streamClaude(
+    {
+      prompt: safeMessage,
+      projectDir: MANUAL_DIR,
+      model,
+      resume: sessionId || undefined,
+      systemPrompt: sessionId ? undefined : (MANUAL_PROMPTS[agent] || MANUAL_PROMPTS.A),
+    },
+    eventsFile,
+    agent,
+    sessionId
+  );
 }
 
 // ── Pipeline mode ───────────────────────────────────────────────────
@@ -503,20 +495,16 @@ function handlePipeline(
   appendUserEvent(state, agent, message);
   writeState(eventsFile, state);
 
-  const args: string[] = [
-    '-p', finalMessage,
-    '--system-prompt-file', roleFile,
-    '--permission-mode', 'auto',
-    '--model', 'claude-opus-4-6',
-    '--output-format', 'stream-json',
-    '--verbose',
-  ];
-  if (sessionId) args.push('--resume', sessionId);
-
   return streamClaude(
-    args,
-    projectDir,
-    { ...process.env, PIPELINE_AGENT: agent, PIPELINE_SECURITY_MODE: securityMode },
+    {
+      prompt: finalMessage,
+      projectDir,
+      model: 'claude-opus-4-6',
+      roleFile,
+      resume: sessionId || undefined,
+      pipelineAgent: agent as PipelineAgentId,
+      securityMode,
+    },
     eventsFile,
     agent,
     sessionId

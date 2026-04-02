@@ -96,6 +96,10 @@ The current approval API finds the "latest project" by scanning `~/Builds/`. Tha
 
 Move agent execution into an OS-enforced sandbox so Bash no longer has ambient access to the host filesystem.
 
+### Concrete Spec
+
+The implementation spec for this phase lives in [SANDBOX-RUNNER-PLAN.md](SANDBOX-RUNNER-PLAN.md).
+
 ### Deliverables
 
 - Introduce a runner abstraction so the orchestrator and chat API stop spawning `claude` directly

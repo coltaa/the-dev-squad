@@ -211,6 +211,8 @@ Goal: strengthen containment without changing the dev-team product model.
 - hooks and policy outside writable project space where possible
 - narrower ambient filesystem and network exposure
 
+The concrete implementation spec for this phase lives in [SANDBOX-RUNNER-PLAN.md](SANDBOX-RUNNER-PLAN.md).
+
 ### Acceptance Criteria
 
 - the team model stays intact

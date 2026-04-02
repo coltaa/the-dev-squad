@@ -61,7 +61,7 @@ Today, the current product shape is already visible:
 
 Internally the app still labels the team as `S`, `A`, `B`, `C`, and `D`. In the product, think of them as the **Supervisor**, **Planner**, **Plan Reviewer**, **Coder**, and **Tester**.
 
-The longer-term implementation plan for pushing even more authority into the supervisor lives in [SUPERVISOR-BUILD-PLAN.md](SUPERVISOR-BUILD-PLAN.md).
+The longer-term implementation plan for pushing even more authority into the supervisor lives in [SUPERVISOR-BUILD-PLAN.md](SUPERVISOR-BUILD-PLAN.md). The concrete `v0.4` containment plan lives in [SANDBOX-RUNNER-PLAN.md](SANDBOX-RUNNER-PLAN.md).
 
 ---
 

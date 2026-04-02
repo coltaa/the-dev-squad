@@ -18,7 +18,7 @@ The product is moving toward "give Claude a dev team":
 - the Planner, Plan Reviewer, Coder, and Tester are the worker specialists
 - the whole team follows the same doctrine: `build-plan-template.md`, `checklist.md`, and the locked `plan.md`
 
-Today, pipeline mode can now start from the **Supervisor** as well as direct planner chat. The supervisor has the first real control-plane actions: saved-session recovery for planning/review turns, `plan-only`, `stop after review`, `continue build` from an approved plan, and chat-triggered start/stop/resume actions. The next implementation step is to keep moving authority toward the supervisor while leaving the actual execution path deterministic in host/orchestrator code. The concrete build plan for that transition lives in [SUPERVISOR-BUILD-PLAN.md](SUPERVISOR-BUILD-PLAN.md).
+Today, pipeline mode can now start from the **Supervisor** as well as direct planner chat. The supervisor has the first real control-plane actions: saved-session recovery for planning/review turns, `plan-only`, `stop after review`, `continue build` from an approved plan, and chat-triggered start/stop/resume actions. The next implementation step is to keep moving authority toward the supervisor while leaving the actual execution path deterministic in host/orchestrator code. The concrete build plan for that transition lives in [SUPERVISOR-BUILD-PLAN.md](SUPERVISOR-BUILD-PLAN.md). The concrete `v0.4` isolation plan lives in [SANDBOX-RUNNER-PLAN.md](SANDBOX-RUNNER-PLAN.md).
 
 When the user chats with the supervisor in pipeline mode, the chat route now injects a live team snapshot: current phase, pipeline status, run goal, active turn, recent events, pending approvals, and recommended control actions. The UI also derives a proactive supervisor update from the same state so the user sees a manager-style summary without having to inspect raw logs, and the orchestrator now emits supervisor-language chat updates at key transitions like planning start, review handoff, approval waits, pauses, resumes, and completion. Before a run exists, the supervisor captures the concept locally and waits for an explicit start command instead of freelancing. That makes the supervisor much closer to a real team manager instead of a generic diagnostic assistant.
 
@@ -135,7 +135,7 @@ claude -p "<prompt>" \
 - `PIPELINE_AGENT` env var — tells the hook which agent is running
 - Role files and shared doctrine provide the team model; hooks provide the lighter safety/discipline guardrails around it
 - Session ids are now persisted mid-turn so stalled A/B runs can be recovered instead of always forcing a reset
-- Future hardening replaces direct host spawning with a sandbox runner; see [SECURITY-ROADMAP.md](SECURITY-ROADMAP.md)
+- Future hardening replaces direct host spawning with a sandbox runner; see [SECURITY-ROADMAP.md](SECURITY-ROADMAP.md) and [SANDBOX-RUNNER-PLAN.md](SANDBOX-RUNNER-PLAN.md)
 
 ## The Orchestrator
 
