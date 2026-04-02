@@ -8,6 +8,8 @@ If your threat model requires defense against a hostile agent, you need OS-level
 
 The concrete implementation plan for getting there lives in [SECURITY-ROADMAP.md](SECURITY-ROADMAP.md).
 
+This project is provided `AS IS` under the MIT license. Users are responsible for reviewing approvals, protecting secrets, and deciding whether the documented limitations are acceptable for their environment.
+
 ## Hook Enforcement Model
 
 Agent permissions are enforced by a `PreToolUse` hook (`pipeline/.claude/hooks/approval-gate.sh`), not by prompts. The hook runs before every tool call for every agent. Prompts provide context — the hook provides guardrails.

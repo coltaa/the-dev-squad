@@ -137,6 +137,16 @@ The autonomous build pipeline. You describe what you want, and 5 agents build it
 
 After the build, chat with any agent for post-build work — fixing bugs, adding features, asking questions.
 
+### Strict Mode
+
+Strict mode is for users who want a human in the loop for shell execution from the build agents.
+
+- **What changes** — Every Bash call from agents C and D pauses for approval
+- **What you see** — The dashboard shows an approval card with the agent, phase, and command description
+- **What happens on approve** — The exact approved command gets a one-time grant and runs once
+- **What happens on deny** — The agent is told the command was denied and must continue without it or explain what is blocked
+- **What does not change** — Strict mode improves practical safety, but it is not OS-level sandboxing. The known hook limitations in [SECURITY.md](SECURITY.md) still apply.
+
 ### Manual Mode
 
 You are the orchestrator. 5 panels, 5 Claude sessions, each with a specialty. You talk to whoever you want, whenever you want. No automation, no phases, no pipeline.
@@ -182,6 +192,8 @@ The S panel on the left is **not** part of the pipeline. S is your diagnostic as
 ## Security
 
 Agents are constrained by a `PreToolUse` hook that gates every tool call. The hook prevents accidental lane drift — it is not a security sandbox. See [SECURITY.md](SECURITY.md) for the threat model, known limitations, and a matrix showing what is fixable in-hook vs what requires design changes or OS-level isolation.
+
+This project is meant to provide practical guardrails and a disciplined workflow, not a security sandbox. If you plan to use it on sensitive code or systems, read [SECURITY.md](SECURITY.md) first and decide whether the current threat model fits your environment.
 
 | Agent | Can Write | Can Run Bash | Can Spawn Agents |
 |-------|-----------|-------------|-----------------|
@@ -230,6 +242,16 @@ The orchestrator routes these signals between agents and advances the pipeline w
 
 ---
 
+## Validation
+
+Useful local checks:
+
+- `pnpm test:hook` — verifies the agent/tool contract against the live approval hook
+- `pnpm test:signals` — verifies structured signal parsing for plan review, code review, and test results
+- `pnpm dev` — runs the viewer locally at [http://localhost:3000](http://localhost:3000)
+
+---
+
 ## Project Structure
 
 ```
@@ -259,13 +281,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Contributors
 
-- John Knopf / CrashOverride LLC — creator and maintainer
+- CrashOverride LLC — creator and maintainer
 - Claude Code — core implementation and pipeline iteration partner
 - OpenAI Codex — contributor for security review, hardening guidance, and documentation updates
 
 ## License
 
 MIT - see [LICENSE](LICENSE) for details.
+
+This project is provided `AS IS`, without warranty. It is your responsibility to review approvals, review generated code, and decide whether this tool is appropriate for your environment. The MIT license is the controlling legal text, and [SECURITY.md](SECURITY.md) documents the current threat model and limitations.
 
 Copyright (c) 2026 CrashOverride LLC
 
