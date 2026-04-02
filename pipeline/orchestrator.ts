@@ -31,6 +31,16 @@ import {
   type PendingApproval,
 } from '../src/lib/pipeline-approval.ts';
 import { extractStructuredSignal } from '../src/lib/pipeline-signal.ts';
+import {
+  EMPTY_RUNTIME,
+  MAX_AUTO_RESUMES,
+  TURN_IDLE_TIMEOUT_MS,
+  buildResumePrompt,
+  canAutoResumeTurn,
+  shouldMarkTurnStalled,
+  summarizePrompt,
+  type PipelineRuntimeState,
+} from '../src/lib/pipeline-runtime.ts';
 
 // ── Config ──────────────────────────────────────────────────────────
 
@@ -161,6 +171,7 @@ interface PipelineState {
   sessions: Record<string, string>;
   buildComplete: boolean;
   usage: TokenUsage;
+  runtime: PipelineRuntimeState;
   events: PipelineEvent[];
 }
 
@@ -180,6 +191,7 @@ if (existingASession && existsSync(eventsFile)) {
     sessions: existing.sessions || {},
     buildComplete: false,
     usage: existing.usage || { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCostUsd: 0 },
+    runtime: existing.runtime || { ...EMPTY_RUNTIME },
     events: existing.events || [],
   };
 } else {
@@ -193,6 +205,7 @@ if (existingASession && existsSync(eventsFile)) {
     sessions: {},
     buildComplete: false,
     usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCostUsd: 0 },
+    runtime: { ...EMPTY_RUNTIME },
     events: [],
   };
 }
@@ -236,6 +249,53 @@ function setPhase(phase: string) {
 
 function saveSession(agent: string, sessionId: string) {
   state.sessions[agent] = sessionId;
+  if (state.runtime.activeTurn?.agent === agent) {
+    state.runtime.activeTurn.sessionId = sessionId;
+  }
+  flush();
+}
+
+function startActiveTurn(agent: AgentId, prompt: string, autoResumeCount: number, resume?: string) {
+  const now = new Date().toISOString();
+  state.runtime.activeTurn = {
+    agent,
+    phase: state.currentPhase,
+    status: 'running',
+    startedAt: now,
+    lastEventAt: now,
+    sessionId: resume || state.sessions[agent] || '',
+    promptSummary: summarizePrompt(prompt),
+    autoResumeCount,
+  };
+  flush();
+}
+
+function noteActiveTurnActivity(agent: AgentId) {
+  const activeTurn = state.runtime.activeTurn;
+  if (!activeTurn || activeTurn.agent !== agent) return;
+
+  activeTurn.lastEventAt = new Date().toISOString();
+  if (activeTurn.status === 'stalled') {
+    activeTurn.status = 'running';
+    delete activeTurn.stalledAt;
+    delete activeTurn.stallReason;
+  }
+  flush();
+}
+
+function markActiveTurnStalled(agent: AgentId, reason: string) {
+  const activeTurn = state.runtime.activeTurn;
+  if (!activeTurn || activeTurn.agent !== agent || activeTurn.status === 'stalled') return;
+
+  activeTurn.status = 'stalled';
+  activeTurn.stalledAt = new Date().toISOString();
+  activeTurn.stallReason = reason;
+  flush();
+}
+
+function clearActiveTurn(agent: AgentId) {
+  if (state.runtime.activeTurn?.agent !== agent) return;
+  state.runtime.activeTurn = null;
   flush();
 }
 
@@ -269,6 +329,7 @@ async function runClaudeTurn(
     role: string;
     resume?: string;
     jsonSchema?: Record<string, unknown>;
+    autoResumeCount?: number;
   }
 ): Promise<{
   result: string;
@@ -276,6 +337,7 @@ async function runClaudeTurn(
   structured: Record<string, unknown> | null;
   permissionDenied: { toolName: string; toolInput: Record<string, unknown> } | null;
   interruptedForApproval: boolean;
+  stalled: boolean;
 }> {
   return new Promise((resolve, reject) => {
     const safePrompt = prompt.startsWith('-') ? 'User says: ' + prompt : prompt;
@@ -306,6 +368,8 @@ async function runClaudeTurn(
       },
     });
 
+    startActiveTurn(agent, safePrompt, opts.autoResumeCount || 0, opts.resume);
+
     let lastResult: Record<string, unknown> | null = null;
     let currentSessionId = opts.resume || '';
     let structured: Record<string, unknown> | null = null;
@@ -313,12 +377,46 @@ async function runClaudeTurn(
     const toolInputs = new Map<string, Record<string, unknown>>();
     let permissionDenied: { toolName: string; toolInput: Record<string, unknown> } | null = null;
     let interruptedForApproval = false;
+    let stalled = false;
     let settled = false;
+    let lastStreamActivityAt = Date.now();
 
     const rl = createInterface({ input: child.stdout });
+    const stallWatcher = setInterval(() => {
+      if (settled) return;
+      if (!shouldMarkTurnStalled(lastStreamActivityAt, Date.now(), TURN_IDLE_TIMEOUT_MS)) return;
+
+      const canAutoResume = canAutoResumeTurn(agent, state.currentPhase) && !!currentSessionId;
+      const reason = canAutoResume
+        ? `Agent ${agent} appears stalled. Preserving the session for resume.`
+        : `Agent ${agent} appears stalled. Manual intervention may be needed.`;
+
+      markActiveTurnStalled(agent, reason);
+      emit('system', state.currentPhase, 'status', reason);
+
+      if (!canAutoResume) {
+        clearInterval(stallWatcher);
+        return;
+      }
+
+      stalled = true;
+      settled = true;
+      clearInterval(stallWatcher);
+      resolve({
+        result: '',
+        sessionId: currentSessionId,
+        structured,
+        permissionDenied,
+        interruptedForApproval,
+        stalled,
+      });
+      child.kill('SIGTERM');
+    }, 5_000);
 
     rl.on('line', (line) => {
       if (!line.trim()) return;
+      lastStreamActivityAt = Date.now();
+      noteActiveTurnActivity(agent);
 
       let event: Record<string, unknown>;
       try {
@@ -331,6 +429,7 @@ async function runClaudeTurn(
 
       if (type === 'system') {
         currentSessionId = (event.session_id as string) || currentSessionId;
+        if (currentSessionId) saveSession(agent, currentSessionId);
       } else if (type === 'assistant') {
         const msg = event.message as Record<string, unknown>;
         const content = msg?.content as Array<Record<string, unknown>>;
@@ -414,13 +513,16 @@ async function runClaudeTurn(
                 };
                 interruptedForApproval = true;
                 settled = true;
+                clearActiveTurn(agent);
                 resolve({
                   result: '',
                   sessionId: currentSessionId,
                   structured,
                   permissionDenied,
                   interruptedForApproval,
+                  stalled,
                 });
+                clearInterval(stallWatcher);
                 child.kill('SIGTERM');
                 return;
               }
@@ -458,8 +560,10 @@ async function runClaudeTurn(
 
     child.on('close', (code) => {
       if (settled) return;
+      clearInterval(stallWatcher);
 
       if (code !== 0 || !lastResult) {
+        clearActiveTurn(agent);
         emit('system', state.currentPhase, 'failure', `Agent ${agent} failed (exit ${code})`);
         if (stderr) console.error(stderr.slice(0, 500));
         reject(new Error(`Agent ${agent} failed with exit code ${code}`));
@@ -467,17 +571,21 @@ async function runClaudeTurn(
       }
 
       settled = true;
+      clearActiveTurn(agent);
       resolve({
         result: (lastResult.result as string) || '',
         sessionId: (lastResult.session_id as string) || currentSessionId,
         structured,
         permissionDenied,
         interruptedForApproval,
+        stalled,
       });
     });
 
     child.on('error', (err) => {
       if (settled) return;
+      clearInterval(stallWatcher);
+      clearActiveTurn(agent);
       emit('system', state.currentPhase, 'failure', `Failed to spawn agent ${agent}: ${err.message}`);
       reject(err);
     });
@@ -495,13 +603,28 @@ async function claude(
 ): Promise<{ result: string; sessionId: string; structured: Record<string, unknown> | null }> {
   let currentPrompt = prompt;
   let currentResume = opts.resume;
+  let autoResumeCount = 0;
 
   while (true) {
     const turn = await runClaudeTurn(agent, currentPrompt, {
       role: opts.role,
       resume: currentResume,
       jsonSchema: opts.jsonSchema,
+      autoResumeCount,
     });
+
+    if (turn.stalled) {
+      if (turn.sessionId && canAutoResumeTurn(agent, state.currentPhase) && autoResumeCount < MAX_AUTO_RESUMES) {
+        autoResumeCount += 1;
+        currentResume = turn.sessionId;
+        currentPrompt = buildResumePrompt(agent, state.currentPhase);
+        emit('system', state.currentPhase, 'status', `Resuming Agent ${agent} from the saved session`);
+        continue;
+      }
+
+      emit('system', state.currentPhase, 'failure', `Agent ${agent} is stalled and could not be auto-resumed`);
+      throw new Error(`Agent ${agent} stalled`);
+    }
 
     const denied = turn.permissionDenied;
     const strictBashApproval =
@@ -776,7 +899,7 @@ async function run() {
       setAgent('A', 'active');
       emit('A', 'plan-review', 'receive', `Received ${questions.length} question(s) from B`);
 
-      await claude('A', [
+      const aFollowup = await claude('A', [
         'Agent B (Plan Reviewer) has questions about your plan:',
         '',
         ...questions.map((q, i) => `${i + 1}. ${q}`),
@@ -785,6 +908,8 @@ async function run() {
         `Update ${join(projectDir, 'plan.md')} with any corrections or additions.`,
         'Do not guess. Verify from source.',
       ].join('\n'), { role: ROLE_A, resume: aSession });
+      aSession = aFollowup.sessionId;
+      saveSession('A', aSession);
 
       emit('A', 'plan-review', 'answer', 'Answered questions and updated plan');
       emit('A', 'plan-review', 'send', 'Sent updated plan to B');
@@ -811,7 +936,7 @@ async function run() {
     '',
     'When you are done, confirm what you built.',
   ].join('\n'), { role: ROLE_C });
-  const cSession = cResult.sessionId;
+  let cSession = cResult.sessionId;
   saveSession('C', cSession);
 
   emit('C', 'coding', 'status', 'Finished coding');
@@ -871,13 +996,15 @@ async function run() {
       setAgent('C', 'active');
       emit('C', 'code-review', 'receive', `Received ${issues.length} issue(s) from D`);
 
-      await claude('C', [
+      const cReviewFollowup = await claude('C', [
         'Agent D (Code Reviewer) found issues with your code:',
         '',
         ...issues.map((issue, i) => `${i + 1}. ${issue}`),
         '',
         'Fix each issue. Do not modify plan.md.',
       ].join('\n'), { role: ROLE_C, resume: cSession });
+      cSession = cReviewFollowup.sessionId;
+      saveSession('C', cSession);
 
       emit('C', 'code-review', 'fix', 'Applied fixes');
       emit('C', 'code-review', 'send', 'Sent fixed code to D');
@@ -912,13 +1039,15 @@ async function run() {
 
     emit('D', 'testing', 'status', `Test round ${testRound}...`);
 
-    const testResult = await claude('D', testPrompt, {
-      role: ROLE_D,
-      resume: dSession!,
-      jsonSchema: TEST_SCHEMA,
-    });
+      const testResult = await claude('D', testPrompt, {
+        role: ROLE_D,
+        resume: dSession!,
+        jsonSchema: TEST_SCHEMA,
+      });
+      dSession = testResult.sessionId;
+      saveSession('D', dSession);
 
-    const signal = testResult.structured || parseSignal(testResult.result);
+      const signal = testResult.structured || parseSignal(testResult.result);
 
     if (isPositiveSignal(signal)) {
       testsPassed = true;
@@ -935,13 +1064,15 @@ async function run() {
       setAgent('C', 'active');
       emit('C', 'testing', 'receive', `Received ${failures.length} failure(s) from D`);
 
-      await claude('C', [
+      const cTestFollowup = await claude('C', [
         'Agent D (Tester) found test failures:',
         '',
         ...failures.map((f, i) => `${i + 1}. ${f}`),
         '',
         'Fix each failure. Do not modify plan.md.',
       ].join('\n'), { role: ROLE_C, resume: cSession });
+      cSession = cTestFollowup.sessionId;
+      saveSession('C', cSession);
 
       emit('C', 'testing', 'fix', 'Applied fixes');
       emit('C', 'testing', 'send', 'Sent fixed code to D');
@@ -957,11 +1088,13 @@ async function run() {
   emit('A', 'deploy', 'receive', 'Received final code from D');
   emit('A', 'deploy', 'status', 'Deploying...');
 
-  await claude('A', [
+  const aDeployResult = await claude('A', [
     'The code has been reviewed and tested by Agent D. Everything passed.',
     'Do not use Bash or git. The orchestrator will handle any final commit.',
     'Confirm the build is complete and mention any environment caveats the user should know.',
   ].join('\n'), { role: ROLE_A, resume: aSession });
+  aSession = aDeployResult.sessionId;
+  saveSession('A', aSession);
 
   setAgent('A', 'done');
   setPhase('complete');

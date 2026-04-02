@@ -4,6 +4,7 @@ import { join, resolve, basename } from 'path';
 import { homedir } from 'os';
 import { createInterface } from 'readline';
 import { NextRequest, NextResponse } from 'next/server';
+import { EMPTY_RUNTIME } from '@/lib/pipeline-runtime';
 
 const BUILDUI_DIR = resolve(process.cwd(), 'pipeline');
 const BUILDS_DIR = join(homedir(), 'Builds');
@@ -42,6 +43,7 @@ function getManualState(): Record<string, unknown> {
     sessions: {},
     buildComplete: false,
     usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCostUsd: 0 },
+    runtime: { ...EMPTY_RUNTIME },
     events: [],
   };
   writeFileSync(eventsFile, JSON.stringify(fresh, null, 2));
@@ -64,6 +66,7 @@ function getStagingState(): Record<string, unknown> {
     sessions: {},
     buildComplete: false,
     usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCostUsd: 0 },
+    runtime: { ...EMPTY_RUNTIME },
     events: [],
   };
   writeFileSync(eventsFile, JSON.stringify(fresh, null, 2));
@@ -112,6 +115,19 @@ function streamClaude(
       try { event = JSON.parse(line); } catch { return; }
 
       const type = event.type as string;
+
+      if (type === 'system') {
+        const streamedSessionId = (event.session_id as string) || '';
+        if (streamedSessionId) {
+          newSessionId = streamedSessionId;
+          try {
+            const s = JSON.parse(readFileSync(eventsFile, 'utf8'));
+            if (!s.sessions) s.sessions = {};
+            s.sessions[agent] = streamedSessionId;
+            writeFileSync(eventsFile, JSON.stringify(s, null, 2));
+          } catch {}
+        }
+      }
 
       if (type === 'assistant') {
         const msg = event.message as Record<string, unknown>;

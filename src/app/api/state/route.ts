@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { NextRequest, NextResponse } from 'next/server';
+import { EMPTY_RUNTIME } from '@/lib/pipeline-runtime';
 
 const BUILDS_DIR = join(homedir(), 'Builds');
 const STAGING_DIR = join(BUILDS_DIR, '.staging');
@@ -12,6 +13,7 @@ const EMPTY_STATE = {
   agentStatus: { A: 'idle', B: 'idle', C: 'idle', D: 'idle', S: 'idle' },
   sessions: {}, buildComplete: false,
   usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCostUsd: 0 },
+  runtime: { ...EMPTY_RUNTIME },
   events: [],
 };
 

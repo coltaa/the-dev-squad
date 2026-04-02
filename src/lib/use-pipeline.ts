@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import type { PipelineRuntimeState } from '@/lib/pipeline-runtime';
 
 export type AgentId = 'A' | 'B' | 'C' | 'D' | 'S';
 export type Phase = 'concept' | 'planning' | 'plan-review' | 'coding' | 'code-review' | 'testing' | 'deploy' | 'complete';
@@ -34,6 +35,7 @@ export interface PipelineState {
   sessions: Record<string, string>;
   buildComplete: boolean;
   usage: TokenUsage;
+  runtime?: PipelineRuntimeState;
   events: PipelineEvent[];
 }
 
@@ -61,6 +63,7 @@ const EMPTY_STATE: PipelineState = {
   sessions: {},
   buildComplete: false,
   usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCostUsd: 0 },
+  runtime: { activeTurn: null },
   events: [],
 };
 

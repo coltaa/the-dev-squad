@@ -58,6 +58,7 @@ export default function PipelinePage() {
   const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
   const [expandedAgent, setExpandedAgent] = useState<AgentId | null>(null);
   const [panelInputs, setPanelInputs] = useState<Record<string, string>>({ A: '', B: '', C: '', D: '' });
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   const panelRefs = useRef<Record<string, HTMLDivElement | null>>({ A: null, B: null, C: null, D: null, S: null });
   const modalRef = useRef<HTMLDivElement>(null);
@@ -132,6 +133,11 @@ export default function PipelinePage() {
     }, 500);
     return () => clearInterval(interval);
   }, [isPipeline]);
+
+  useEffect(() => {
+    const interval = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleSend() {
     if (sendingAgents.has('S') || !chatInput.trim()) return;
@@ -233,6 +239,10 @@ export default function PipelinePage() {
   })();
 
   const errorCount = state.events.filter(e => e.type === 'issue' || e.type === 'failure').length;
+  const activeTurn = state.runtime?.activeTurn || null;
+  const activeTurnIdleSeconds = activeTurn
+    ? Math.max(0, Math.floor((nowMs - new Date(activeTurn.lastEventAt).getTime()) / 1000))
+    : 0;
 
   return (
     <div className="p-4 space-y-4">
@@ -361,6 +371,9 @@ export default function PipelinePage() {
                 {state.activeAgent && (
                   <Badge variant="purple">Agent {state.activeAgent}</Badge>
                 )}
+                {activeTurn?.status === 'stalled' && (
+                  <Badge variant="warning">TURN STALLED</Badge>
+                )}
                 <Badge variant={activeSecurityMode === 'strict' ? 'warning' : 'success'}>
                   {activeSecurityMode === 'strict' ? 'STRICT' : 'FAST'}
                 </Badge>
@@ -432,6 +445,37 @@ export default function PipelinePage() {
                       'text-emerald-400'
                     }`}>{lastAction.agent}</span>
                     <span className="text-slate-400">{lastAction.text}</span>
+                  </div>
+                </div>
+              )}
+
+              {activeTurn && (
+                <div>
+                  <div className="mb-1 text-[10px] uppercase tracking-wider text-slate-500">Current Turn</div>
+                  <div className={`rounded-lg border px-3 py-2 text-[11px] ${
+                    activeTurn.status === 'stalled'
+                      ? 'border-amber-500/40 bg-amber-500/10 text-amber-200'
+                      : 'border-white/10 bg-white/5 text-slate-300'
+                  }`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-semibold">
+                        Agent {activeTurn.agent} · {PHASE_LABELS[activeTurn.phase] || activeTurn.phase}
+                      </span>
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                        idle {activeTurnIdleSeconds}s
+                      </span>
+                    </div>
+                    <p className="mt-1 leading-relaxed">{activeTurn.promptSummary}</p>
+                    {activeTurn.status === 'stalled' && (
+                      <p className="mt-2 text-[10px] uppercase tracking-wider text-amber-400">
+                        {activeTurn.stallReason || 'This turn appears stalled.'}
+                      </p>
+                    )}
+                    {activeTurn.autoResumeCount > 0 && (
+                      <p className="mt-2 text-[10px] uppercase tracking-wider text-violet-300">
+                        Auto-resume attempts: {activeTurn.autoResumeCount}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
