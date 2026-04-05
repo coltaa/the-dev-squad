@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
+import Markdown from 'react-markdown';
 import { Badge } from '@/components/shared/Badge';
 import { AutoGrowTextarea } from '@/components/shared/AutoGrowTextarea';
 import { LunarOfficeScene } from '@/components/mission/LunarOfficeScene';
@@ -153,6 +154,7 @@ export default function PipelinePage() {
     setSendingAgents(prev => new Set([...prev, 'S']));
     await sendChat('S', chatInput.trim(), isPipeline ? {
       securityMode: selectedSecurityMode,
+      permissionMode: selectedPermissionMode,
       runGoal: selectedRunGoal,
     } : undefined);
     setChatInput('');
@@ -209,6 +211,7 @@ export default function PipelinePage() {
     setSelectedAgent(id);
     await sendChat(id, msg, isPipeline ? {
       securityMode: selectedSecurityMode,
+      permissionMode: selectedPermissionMode,
       runGoal: selectedRunGoal,
     } : undefined);
     setPanelInputs(prev => ({ ...prev, [id]: '' }));
@@ -222,6 +225,7 @@ export default function PipelinePage() {
     setSendingAgents(prev => new Set([...prev, expandedAgent]));
     await sendChat(expandedAgent, msg, isPipeline ? {
       securityMode: selectedSecurityMode,
+      permissionMode: selectedPermissionMode,
       runGoal: selectedRunGoal,
     } : undefined);
     setChatInput('');
@@ -237,6 +241,7 @@ export default function PipelinePage() {
     setSendingAgents(prev => new Set([...prev, toAgent]));
     await sendChat(toAgent, msg, isPipeline ? {
       securityMode: selectedSecurityMode,
+      permissionMode: selectedPermissionMode,
       runGoal: selectedRunGoal,
     } : undefined);
     setSendingAgents(prev => { const n = new Set(prev); n.delete(toAgent); return n; });
@@ -808,7 +813,7 @@ export default function PipelinePage() {
                 <span className="mr-1.5 text-[9px] text-[#333]">
                   {new Date(e.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 </span>
-                {e.text}
+                <span className="prose prose-invert prose-sm max-w-none prose-p:my-1 prose-headings:mt-3 prose-headings:mb-1 prose-li:my-0.5 prose-hr:my-2 prose-pre:my-1"><Markdown>{e.text}</Markdown></span>
               </div>
             ))}
           </div>
@@ -923,7 +928,7 @@ export default function PipelinePage() {
                       <span className="mr-1.5 text-[9px] text-[#333]">
                         {new Date(e.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                       </span>
-                      {e.text}
+                      <span className="prose prose-invert prose-sm max-w-none prose-p:my-1 prose-headings:mt-3 prose-headings:mb-1 prose-li:my-0.5 prose-hr:my-2 prose-pre:my-1"><Markdown>{e.text}</Markdown></span>
                     </div>
                   ))}
                 </div>
@@ -984,7 +989,7 @@ export default function PipelinePage() {
                   <span className="mr-2 text-[10px] text-[#444]">
                     {new Date(e.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                   </span>
-                  {e.text}
+                  <span className="prose prose-invert prose-sm max-w-none prose-p:my-1 prose-headings:mt-3 prose-headings:mb-1 prose-li:my-0.5 prose-hr:my-2 prose-pre:my-1"><Markdown>{e.text}</Markdown></span>
                 </div>
               ))}
             </div>

@@ -26,11 +26,10 @@ When the user chats with the supervisor in pipeline mode, the chat route now inj
 
 ### Phase 0: Concept
 
-1. The **user** can chat with the **Supervisor** or the **Planner** in the viewer. The preferred path is to talk to the supervisor and let the supervisor manage the team.
-2. Before a run exists, the **Supervisor** captures the concept locally in staging instead of freelancing on the filesystem.
-3. The **Supervisor** or the **Planner** gathers the concept and constraints.
-4. Chat happens in a staging area (`~/Builds/.staging/`). No project directory created yet.
-5. When the user asks the **Supervisor** to start, or uses the fallback **START** button, staging moves to a real project dir and the pipeline runs according to the selected goal. In strict mode, the UI can still surface Bash approvals later in the run.
+1. The **user** sends the first message to the **Supervisor** — this captures the concept.
+2. After the concept is captured, the **Supervisor** engages naturally via Claude — discussing the idea, giving opinions, asking clarifying questions, and suggesting improvements. The user can also talk to the **Planner** directly.
+3. Chat happens in a staging area (`~/Builds/.staging/`). No project directory created yet.
+4. When the user asks the **Supervisor** to start, or uses the fallback **START** button, staging moves to a real project dir and the pipeline runs according to the dashboard toggles (security mode, permission mode, run goal). The concept-phase conversation is preserved in the pipeline events.
 
 ### Phase 1: Planning
 

@@ -88,6 +88,7 @@ interface UsePipelineOptions {
 
 interface SendChatOptions {
   securityMode?: SecurityMode;
+  permissionMode?: PermissionMode;
   runGoal?: RunGoal;
 }
 
@@ -127,6 +128,7 @@ export function usePipelineState({ pollInterval = 400, mode, model }: UsePipelin
         mode,
         model,
         securityMode: options?.securityMode,
+        permissionMode: options?.permissionMode,
         runGoal: options?.runGoal,
       }),
     });

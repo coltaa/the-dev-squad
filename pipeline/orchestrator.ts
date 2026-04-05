@@ -93,8 +93,6 @@ const projectDirIdx = args.indexOf('--project-dir');
 const aSessionIdx = args.indexOf('--a-session');
 
 if (projectDirIdx !== -1) {
-  // Launched by viewer or resumed from existing project
-  resumingExistingProject = true;
   projectDir = args[projectDirIdx + 1];
   if (aSessionIdx !== -1) existingASession = args[aSessionIdx + 1];
   // Read concept from existing state
@@ -103,6 +101,8 @@ if (projectDirIdx !== -1) {
     concept = existing.concept || 'Build from viewer';
     if (!existingASession) existingASession = existing.sessions?.A || '';
     if (existing.securityMode === 'strict') securityMode = 'strict';
+    // Only treat as a resume if the state has an explicit resume action
+    resumingExistingProject = existing.resumeAction === 'continue-approved-plan' || existing.resumeAction === 'resume-stalled-turn';
   } catch {
     concept = 'Build from viewer';
   }
@@ -218,22 +218,39 @@ if (resumingExistingProject && existsSync(eventsFile)) {
     events: existing.events || [],
   };
 } else {
+  // Fresh start — but preserve any existing events (concept-phase conversation)
+  let existingEvents: PipelineEvent[] = [];
+  let existingSessions: Record<string, string> = {};
+  let existingUsage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCostUsd: 0 };
+  let existingRunGoal = 'full-build';
+  let existingStopAfterPhase = 'none';
+  if (existsSync(eventsFile)) {
+    try {
+      const existing = JSON.parse(readFileSync(eventsFile, 'utf8'));
+      existingEvents = existing.events || [];
+      existingSessions = existing.sessions || {};
+      existingUsage = existing.usage || existingUsage;
+      existingRunGoal = existing.runGoal || existingRunGoal;
+      existingStopAfterPhase = existing.stopAfterPhase || existingStopAfterPhase;
+      if (existing.securityMode === 'strict') securityMode = 'strict';
+    } catch {}
+  }
   state = {
     concept,
     projectDir,
     currentPhase: 'concept',
     securityMode,
-    runGoal: 'full-build',
-    stopAfterPhase: 'none',
+    runGoal: existingRunGoal === 'plan-only' ? 'plan-only' : 'full-build',
+    stopAfterPhase: existingStopAfterPhase === 'plan-review' ? 'plan-review' : 'none',
     pipelineStatus: 'idle',
     resumeAction: 'none',
     activeAgent: '',
     agentStatus: { A: 'idle', B: 'idle', C: 'idle', D: 'idle', S: 'idle' },
-    sessions: {},
+    sessions: existingSessions,
     buildComplete: false,
-    usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCostUsd: 0 },
+    usage: existingUsage,
     runtime: { ...EMPTY_RUNTIME },
-    events: [],
+    events: existingEvents,
   };
 }
 
@@ -914,10 +931,9 @@ async function runPlanningPhase(aSession: string, options?: { resumeStalled?: bo
 
   if (step === 'research') {
     emit('A', 'planning', 'status', options?.resumeStalled ? 'Resuming research pass...' : 'Starting research pass...');
-    emitSupervisor(
-      'planning',
-      'The planner is finishing the research pass first so the plan can be written from verified facts instead of guesses.'
-    );
+    if (options?.resumeStalled) {
+      emitSupervisor('planning', 'The planner is finishing the research pass from the saved session.');
+    }
 
     const researchResult = await claude('A', buildPlanningResearchPrompt(phase0Context, concept), {
       role: ROLE_A,
@@ -1355,12 +1371,10 @@ async function run() {
 
   if (existingASession && !resumingExistingProject) {
     emit('system', 'concept', 'status', `Build concept: ${concept}`);
-    emit('system', 'concept', 'status', 'Phase 0 completed in viewer. Starting pipeline...');
-    emitSupervisor('concept', 'I have the concept and I am starting the team from the staged conversation now.');
+    emit('system', 'concept', 'status', 'Starting pipeline...');
   } else if (!resumingExistingProject) {
     setPhase('concept');
     emit('system', 'concept', 'status', `Build concept: ${concept}`);
-    emitSupervisor('concept', 'I have the concept. Once you start the run, I will hand it to the planner first.');
   } else {
     emit('system', state.currentPhase || 'concept', 'status', 'Resuming existing pipeline state');
     emitSupervisor(state.currentPhase || 'concept', 'I am resuming the existing team state from the last saved checkpoint.');
