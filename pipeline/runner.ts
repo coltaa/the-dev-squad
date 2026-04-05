@@ -298,10 +298,6 @@ export function buildRunnerEnv(opts: RunnerOptions): NodeJS.ProcessEnv {
     env.PIPELINE_SECURITY_MODE = opts.securityMode;
   }
 
-  if (opts.pipelineAgent === 'C' || opts.pipelineAgent === 'D') {
-    env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = '1';
-  }
-
   return env;
 }
 
@@ -369,8 +365,6 @@ export function buildDockerArgs(
       dockerArgs.push('-e', envKey);
     }
   }
-  dockerArgs.push('-e', 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1');
-
   if (hasValue(opts.pipelineAgent)) {
     dockerArgs.push('-e', `PIPELINE_AGENT=${opts.pipelineAgent}`);
   }
