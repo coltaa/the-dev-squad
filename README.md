@@ -1,26 +1,30 @@
 <p align="center">
-  <h1 align="center">The Dev Squad</h1>
-  <p align="center"><strong>Give Claude its own dev team.</strong></p>
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:000000,50:00ff41,100:000000&height=200&section=header&text=THE%20DEV%20SQUAD&fontSize=62&fontColor=00ff41&animation=fadeIn&desc=v0.4.0%20%7C%20AGENT%20E%20ONLINE&descAlignY=72&descSize=18" alt="The Dev Squad" />
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.4.0-blue" alt="Version" />
-  <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
-  <img src="https://img.shields.io/badge/claude-opus%204.6-blueviolet" alt="Claude Opus 4.6" />
-  <img src="https://img.shields.io/badge/agents-6-orange" alt="6 Agents" />
-  <img src="https://img.shields.io/badge/node-22%2B-339933" alt="Node 22+" />
-  <img src="https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/macOS-000000?logo=apple&logoColor=white" alt="macOS" />
+  <img src="https://readme-typing-svg.demolab.com?font=IBM+Plex+Mono&weight=600&size=22&duration=2500&pause=600&color=00FF41&background=00000000&center=true&vCenter=true&multiline=false&width=900&height=60&lines=%3E+GIVE+CLAUDE+ITS+OWN+DEV+TEAM_;%3E+6+AGENTS.+ONE+DOCTRINE.+BULLETPROOF+BUILDS_;%3E+NO+API+KEY+REQUIRED_;%3E+BUILT+ON+YOUR+CLAUDE+SUBSCRIPTION_" alt="Taglines" />
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/no_API_key-required-success" alt="No API key required" />
-  <img src="https://img.shields.io/badge/built_with-Claude_Code-blueviolet" alt="Built with Claude Code" />
-  <img src="https://img.shields.io/badge/runs_on-Claude_subscription-blue" alt="Runs on Claude subscription" />
-  <img src="https://img.shields.io/github/stars/johnkf5-ops/the-dev-squad?style=social" alt="GitHub stars" />
-  <img src="https://img.shields.io/github/forks/johnkf5-ops/the-dev-squad?style=social" alt="GitHub forks" />
-  <img src="https://img.shields.io/github/last-commit/johnkf5-ops/the-dev-squad" alt="Last commit" />
-  <img src="https://img.shields.io/github/issues/johnkf5-ops/the-dev-squad" alt="Open issues" />
+  <img src="https://img.shields.io/badge/v0.4.0-00FF41?style=flat-square&labelColor=000000&color=00FF41" alt="v0.4.0" />
+  <img src="https://img.shields.io/badge/MIT-00FF41?style=flat-square&label=LICENSE&labelColor=000000&color=00FF41" alt="MIT" />
+  <img src="https://img.shields.io/badge/6-00FF41?style=flat-square&label=AGENTS&labelColor=000000&color=00FF41" alt="6 Agents" />
+  <img src="https://img.shields.io/badge/ONLINE-00FF41?style=flat-square&label=STATUS&labelColor=000000&color=00FF41" alt="STATUS ONLINE" />
+  <img src="https://img.shields.io/badge/NONE-00FF41?style=flat-square&label=API%20KEY&labelColor=000000&color=00FF41" alt="No API key" />
+  <img src="https://img.shields.io/badge/CLAUDE_OPUS_4.6-00FF41?style=flat-square&label=MODEL&labelColor=000000&color=00FF41" alt="Claude Opus 4.6" />
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/github/stars/johnkf5-ops/the-dev-squad?style=flat-square&label=STARS&labelColor=000000&color=00FF41&logo=github&logoColor=00FF41" alt="GitHub stars" />
+  <img src="https://img.shields.io/github/forks/johnkf5-ops/the-dev-squad?style=flat-square&label=FORKS&labelColor=000000&color=00FF41&logo=github&logoColor=00FF41" alt="GitHub forks" />
+  <img src="https://img.shields.io/github/last-commit/johnkf5-ops/the-dev-squad?style=flat-square&label=LAST%20COMMIT&labelColor=000000&color=00FF41&logo=github&logoColor=00FF41" alt="Last commit" />
+  <img src="https://img.shields.io/github/issues/johnkf5-ops/the-dev-squad?style=flat-square&label=ISSUES&labelColor=000000&color=00FF41&logo=github&logoColor=00FF41" alt="Open issues" />
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/CLAUDE_CODE-00FF41?style=flat-square&label=BUILT%20WITH&labelColor=000000&color=00FF41&logo=anthropic&logoColor=00FF41" alt="Built with Claude Code" />
+  <img src="https://img.shields.io/badge/CHATGPT_5.4-00FF41?style=flat-square&label=BUILT%20WITH&labelColor=000000&color=00FF41&logo=openai&logoColor=00FF41" alt="Built with ChatGPT 5.4" />
 </p>
 
 <p align="center">
@@ -82,6 +86,19 @@ For the architecture, security model, and current honest stance on what we ship 
 
 ## The Team
 
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  SQUAD ROSTER                                          v0.4.0 ║
+╠═══════════════════════════════════════════════════════════════╣
+║  ● S  │  SUPERVISOR             │  ONLINE                     ║
+║  ● A  │  PLANNER                │  ONLINE                     ║
+║  ● B  │  PLAN REVIEWER          │  ONLINE                     ║
+║  ● C  │  CODER                  │  ONLINE                     ║
+║  ● D  │  CODE REVIEWER/TESTER   │  ONLINE                     ║
+║  ○ E  │  SECURITY AUDITOR       │  OPTIONAL (toggle at start) ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
 | Team Member | What It Does | Internal ID |
 |-------------|--------------|-------------|
 | **Supervisor** | Your default Claude session. Oversees the team, captures the concept, starts work, pauses after review, continues approved plans, and helps when runs stall or get weird. | `S` |
@@ -103,7 +120,33 @@ Each team member is a separate Claude Code session running Claude Opus 4.6. They
 5. Your project is in ~/Builds/
 ```
 
-The supervisor is the recommended front door now. The old buttons and direct specialist chats are still there, but the product is increasingly shaped around “talk to the supervisor, let the supervisor use the team.”
+The supervisor is the recommended front door now. The old buttons and direct specialist chats are still there, but the product is increasingly shaped around "talk to the supervisor, let the supervisor use the team."
+
+### The Pipeline
+
+```mermaid
+flowchart TD
+    U([USER]) -->|"concept"| S
+    S[["SUPERVISOR (S)"]] -->|"start"| A
+    A[["PLANNER (A)"]] -->|"plan.md"| B
+    B[["PLAN REVIEWER (B)"]] -->|"approved"| C
+    B -.->|"questions"| A
+    C[["CODER (C)"]] -->|"code"| D
+    D[["TESTER (D)"]] -->|"pass"| AUDIT{"AUDIT ENABLED?"}
+    D -.->|"fail"| C
+    AUDIT -->|"no"| DEPLOY[["DEPLOY"]]
+    AUDIT -->|"yes"| E[["SEC AUDITOR (E)"]]
+    E -->|"findings"| PAUSE["AWAITING DECISION"]
+    PAUSE -->|"send to C"| C
+    PAUSE -->|"dismiss"| PAUSE
+    PAUSE -->|"deploy"| DEPLOY
+    DEPLOY --> DONE([BUILD COMPLETE])
+
+    classDef green fill:#0a0a0a,stroke:#00FF41,color:#00FF41
+    classDef optional fill:#0a0a0a,stroke:#00FF41,color:#00FF41,stroke-dasharray: 5 5
+    class S,A,B,C,D,DEPLOY green
+    class E,PAUSE optional
+```
 
 **Phase 0: Concept** — You talk to the supervisor or the planner. The recommended flow is to tell the supervisor what you want, let the supervisor capture the concept, and then tell the supervisor when to start the team. Strict mode can still ask for Bash approvals later.
 
@@ -392,8 +435,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ## Contributors
 
 - CrashOverride LLC — creator and maintainer
-- Claude Code — core implementation and pipeline iteration partner
-- OpenAI Codex — contributor for security review, hardening guidance, and documentation updates
+- Claude Code (Anthropic) — core implementation, pipeline iteration, Agent E security audit shipped in `v0.4.0`
+- ChatGPT 5.4 (OpenAI) — contributor for design review, security hardening guidance, and documentation passes
 
 ## License
 
@@ -406,5 +449,9 @@ Copyright (c) 2026 CrashOverride LLC
 ---
 
 <p align="center">
-  <strong>Built with Claude Code and OpenAI Codex. Runs on Claude Code. No API required.</strong>
+  <strong>Built with Claude Code and ChatGPT 5.4. Runs on Claude Code. No API required.</strong>
+</p>
+
+<p align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=IBM+Plex+Mono&weight=600&size=18&duration=99999&pause=0&color=00FF41&background=00000000&center=true&vCenter=true&multiline=false&width=400&height=40&lines=user%40dev-squad%3A~%24+_" alt="prompt" />
 </p>
