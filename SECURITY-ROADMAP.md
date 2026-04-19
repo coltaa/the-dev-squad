@@ -43,15 +43,15 @@ Make coder/tester Bash usage human-mediated instead of pattern-mediated.
 
 ### Status
 
-Shipped in `v0.3.0`:
+**Shipping today:**
 
-- Pipeline runs can now choose `Fast` or `Strict`
+- Pipeline runs can choose `Fast` or `Strict`
 - Strict mode asks for approval on every coder/tester Bash call
 - The selected mode is persisted in pipeline state and passed through spawned sessions
 - Approval decisions are tied to explicit request records instead of "latest project wins"
 - Approved Bash commands receive a one-time grant for the exact command that was approved
 
-### What Shipped in `v0.3`
+### What This Phase Delivered
 
 - Visible security mode selector in the viewer for pipeline runs: `Fast` or `Strict`
 - Selected mode persisted in pipeline state so the UI, orchestrator, and approvals agree on the current policy

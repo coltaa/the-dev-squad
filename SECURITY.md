@@ -107,13 +107,13 @@ Agent E is the strictest role: read-only static analysis, no shell, no egress. I
 
 Pipeline sessions also set `CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1`, which resets Claude's working directory after each Bash command. This mitigates `cd`-then-`Write` drift, but it does not make Bash read-only.
 
-## Recommended Hardening (Future)
+## Recommended Hardening (Layered)
 
-The build plan is in [SECURITY-ROADMAP.md](SECURITY-ROADMAP.md). In short:
+The full plan is in [SECURITY-ROADMAP.md](SECURITY-ROADMAP.md). In short:
 
-1. **`v0.3`: Strict mode** — shipped; coder/tester Bash now supports "approve every call" with request-scoped approval records and one-time grants for the exact approved command
-2. **`v0.4`: Optional Security Audit (Agent E)** — shipped; OWASP-class read-only audit before deploy with severity ranking, user-controlled per-finding fix loop, and explicit user-gated deploy
-3. **`v0.5`: Host-owned policy** — planned; move approvals and enforcement outside the repo so agents cannot disable them by editing project files
+1. **Strict mode** *(shipping)* — coder/tester Bash supports "approve every call" with request-scoped approval records and one-time grants for the exact approved command.
+2. **Optional Security Audit (Agent E)** *(shipping)* — OWASP-class read-only audit before deploy with severity ranking, user-controlled per-finding fix loop, and explicit user-gated deploy.
+3. **Host-owned policy** *(planned, no ship date)* — move approvals and enforcement outside the repo so agents cannot disable them by editing project files.
 
 Sandboxed execution is **not** on the near-term roadmap. The Docker runner code remains in the tree for the cases where it works, but Claude Code subscription auth inside containers is too unreliable to make sandboxed execution a default. If you need OS-level isolation today, run The Dev Squad inside a VM you own.
 

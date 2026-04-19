@@ -114,7 +114,7 @@ Additional protections:
 Roadmap:
 - **Fast mode** is the current autonomous default
 - **Strict mode** is available for pipeline runs
-- **Optional Security Audit (Agent E)** is live in `v0.4.0` — read-only OWASP-class pass with severity ranking, user-controlled fix loop, and explicit deploy gate
+- **Optional Security Audit (Agent E)** — read-only OWASP-class pass with severity ranking, user-controlled fix loop, and explicit deploy gate
 - **Request-scoped approvals** are implemented for strict-mode Bash approvals
 - **Sandboxed/isolated execution** is **not** an active roadmap item; the Docker runner code remains for narrow cases but is too unreliable to default
 - The concrete implementation plan lives in [SECURITY-ROADMAP.md](SECURITY-ROADMAP.md)

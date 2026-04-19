@@ -358,9 +358,9 @@ Additional protections:
 Roadmap:
 - **Fast mode** stays the default for autonomy
 - **Strict mode** is available for pipeline runs
-- **Optional Security Audit (Agent E)** is live in `v0.4.0` — final OWASP-class pass with severity ranking, user-controlled fix loop, and explicit deploy gate
+- **Optional Security Audit (Agent E)** — final OWASP-class read-only pass with severity ranking, user-controlled fix loop, and explicit deploy gate. Toggle at build start.
 - **Request-scoped approvals** are live; strict-mode approvals are now tied to explicit request records instead of "latest project wins"
-- **Host-owned policy service** (planned for `v0.5`, no ship date) — moves trust outside the agent-writable workspace
+- **Host-owned policy service** (planned, no ship date) — moves trust outside the agent-writable workspace
 - The concrete implementation plan lives in [SECURITY-ROADMAP.md](SECURITY-ROADMAP.md)
 
 ---
@@ -435,7 +435,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ## Contributors
 
 - CrashOverride LLC — creator and maintainer
-- Claude Code (Anthropic) — core implementation, pipeline iteration, Agent E security audit shipped in `v0.4.0`
+- Claude Code (Anthropic) — core implementation, pipeline iteration, Agent E security audit
 - ChatGPT 5.4 (OpenAI) — contributor for design review, security hardening guidance, and documentation passes
 
 ## License
