@@ -19,8 +19,8 @@ interface PixelSpriteProps {
 }
 
 /* Sprite sheet layout: 256×128, 32×32 cells
-   8 columns (walk frames), 4 rows (front/back/left/right)
-   Row 0 = front (facing camera), 1 = back, 2 = left, 3 = right
+   8 columns (walk frames), 4 rows
+   Row 0 = front (facing camera), 1 = back, 2 = left-facing art, 3 = right-facing art
    Frame 0 = idle standing pose */
 
 const SCALE = 2;
@@ -42,10 +42,10 @@ const spriteFile: Record<string, string> = {
 
 function getRow(facing: string): number {
   switch (facing) {
-    case 'back': return 1;
-    case 'right': return 2;
-    case 'left': return 3;
-    default: return 0; // front
+    case 'back':  return 1;
+    case 'left':  return 2;  // row 2 contains left-facing art
+    case 'right': return 3;  // row 3 contains right-facing art
+    default:      return 0;  // front
   }
 }
 

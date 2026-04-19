@@ -2,6 +2,19 @@
 
 All notable changes to **The Dev Squad** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [SemVer](https://semver.org/) loosely while pre-`v1.0`.
 
+## [v0.4.3] — 2026-04-19
+
+### Added
+
+- **TV in the Lunar Office.** New `TVScreen` component renders an animated GIF inside the office TV sprite. 24 channel GIFs ship in `public/sprites/tv/` plus a `static.gif` interstitial. Channels rotate every 7s with a 1s static flip between them. The TV is gated by `couchOccupied` — it only plays when at least one sprite is on the couch. Rotation uses **bag-shuffle**: every channel airs once per deck (Fisher-Yates shuffled) before any repeats; on reshuffle, the first item is swapped if it would back-to-back the channel just shown.
+
+### Fixed
+
+- **Ping-pong:** two players are now paired (group-only, never solo wander), with shared return time so both leave the table together. Occupancy check skips the activity when either spot is taken. Sprite spot positions tweaked so the right player isn't drawn under the table.
+- **Sprite facing inverted.** `PixelSprite.getRow` mapped `'left' → 3` and `'right' → 2`, but the sprite sheet has left-facing art on row 2 and right-facing art on row 3. Swapped the mapping so sprites face the direction they're actually moving.
+
+---
+
 ## [v0.4.2] — 2026-04-19
 
 ### Fixed

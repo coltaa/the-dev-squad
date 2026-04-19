@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLayoutEffect, useRef, useState, useEffect, useCallback } from 'react';
+import { useLayoutEffect, useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { PixelSprite } from './PixelSprite';
 import type { Phase, AgentId } from '@/lib/use-pipeline';
 
@@ -107,8 +107,8 @@ const idleSpots: { x: number; y: number; label: string }[] = [
   { x: 450,  y: 330, label: 'hallway-1' },
   { x: 660,  y: 330, label: 'hallway-2' },
   { x: 200,  y: 430, label: 'floor-left' },
-  { x: 140,  y: 460, label: 'pingpong' },
-  { x: 280,  y: 460, label: 'pingpong' },
+  { x: 140,  y: 505, label: 'pingpong' },
+  { x: 330,  y: 505, label: 'pingpong' },
   { x: 859,  y: 470, label: 'hookah' },
   { x: 975,  y: 470, label: 'hookah' },
   { x: 917,  y: 515, label: 'hookah' },
@@ -583,6 +583,90 @@ function Sprite({ src, x, y, w, h, z = 5 }: { src: string; x: number; y: number;
   );
 }
 
+// TV screen — cycles through channel GIFs with brief static between flips.
+// Powered down (renders nothing) when no agent is on the couch.
+const TV_CHANNELS = [
+  '/sprites/tv/cody-vs-bison.gif',
+  '/sprites/tv/1_9Cv-HmxcZyEk75OXcIlo8g.gif',
+  '/sprites/tv/172142.gif',
+  '/sprites/tv/AqRry_.gif',
+  '/sprites/tv/fxijoh1wp0291.gif',
+  '/sprites/tv/G39sTMg.gif',
+  '/sprites/tv/thimbleweed-park-wasptube1.gif',
+  '/sprites/tv/V45wrCa.gif',
+  '/sprites/tv/1IU1.gif',
+  '/sprites/tv/88e5440b86d65fef5ec08e9747f93a63.gif',
+  '/sprites/tv/all-you-can-eat.gif',
+  '/sprites/tv/dance-dancing.gif',
+  '/sprites/tv/Dl6k3i.gif',
+  '/sprites/tv/giphy.gif',
+  '/sprites/tv/giphy-1.gif',
+  '/sprites/tv/giphy-downsized.gif',
+  '/sprites/tv/giphy%20(1).gif',
+  '/sprites/tv/giphy%20(2).gif',
+  '/sprites/tv/hamster-jazz-band.gif',
+  '/sprites/tv/running-ethan-hunt.gif',
+  '/sprites/tv/SugHDy.gif',
+  '/sprites/tv/UQdePR.gif',
+  '/sprites/tv/vandamme-dancing.gif',
+];
+const TV_STATIC = '/sprites/tv/static.gif';
+const TV_CHANNEL_MS = 7000;
+const TV_STATIC_MS = 1000;
+
+function shuffledDeck(n: number): number[] {
+  const deck = Array.from({ length: n }, (_, i) => i);
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return deck;
+}
+
+function TVScreen({ isOn }: { isOn: boolean }) {
+  const [channelIdx, setChannelIdx] = useState(0);
+  const [showingStatic, setShowingStatic] = useState(false);
+  // Bag-shuffle: every channel airs once per deck, then reshuffle.
+  const deckRef = useRef<number[]>(shuffledDeck(TV_CHANNELS.length));
+
+  useEffect(() => {
+    if (!isOn) return; // pause cycling when TV is off (no one on couch)
+    if (showingStatic) {
+      const t = setTimeout(() => {
+        setChannelIdx((current) => {
+          if (TV_CHANNELS.length <= 1) return 0;
+          if (deckRef.current.length === 0) {
+            const fresh = shuffledDeck(TV_CHANNELS.length);
+            // Avoid back-to-back repeat across the deck boundary.
+            if (fresh[0] === current && fresh.length > 1) {
+              [fresh[0], fresh[1]] = [fresh[1], fresh[0]];
+            }
+            deckRef.current = fresh;
+          }
+          return deckRef.current.shift()!;
+        });
+        setShowingStatic(false);
+      }, TV_STATIC_MS);
+      return () => clearTimeout(t);
+    } else {
+      const t = setTimeout(() => setShowingStatic(true), TV_CHANNEL_MS);
+      return () => clearTimeout(t);
+    }
+  }, [isOn, showingStatic, channelIdx]);
+
+  if (!isOn) return null;
+
+  const src = showingStatic ? TV_STATIC : TV_CHANNELS[channelIdx];
+  return (
+    <img
+      src={src}
+      alt=""
+      className="absolute"
+      style={{ left: 1040, top: 331, width: 132, height: 65, objectFit: 'fill', imageRendering: 'pixelated', zIndex: 8 }}
+    />
+  );
+}
+
 function WaterPipe({ x, y }: { x: number; y: number }) {
   return (
     <div className="absolute z-[12]" style={{ left: x, top: y }}>
@@ -765,13 +849,14 @@ export function LunarOfficeScene({
         }));
         const allOccupied = [...externalOccupied, ...batchedOccupied];
 
-        // Find an available spot
+        // Find an available spot. Skip pingpong — it requires a partner, only sendGroup() puts agents there.
         const startIdx = Math.floor(Math.random() * idleSpots.length);
         for (let attempt = 0; attempt < idleSpots.length; attempt++) {
           const idx = (startIdx + attempt) % idleSpots.length;
           if (usedSpotIdxs.has(idx)) continue;
 
           const spot = idleSpots[idx];
+          if (spot.label === 'pingpong') continue;
           if (!isCandidateBlocked(spot, allOccupied)) {
             usedSpotIdxs.add(idx);
             const isCouch = spot.label === 'couch';
@@ -842,15 +927,52 @@ export function LunarOfficeScene({
   // Occasionally triggers group gatherings at hookah or couch
   const idleWanderRef = useRef<number[]>([]);
   useEffect(() => {
-    // Send a group of agents to a group spot (hookah or couch)
+    // Send a group of agents to a group spot (hookah, couch, or pingpong)
     function sendGroup(groupLabel: 'hookah' | 'couch' | 'pingpong', agents: WorkerId[]) {
-      const spots = idleSpots.filter(s => s.label === groupLabel);
-      const facing = groupLabel === 'couch' ? 'back' as const : 'front' as const;
+      const allSpots = idleSpots.filter(s => s.label === groupLabel);
+
+      // Filter to spots NOT already occupied by some other worker (idle position OR home OR phase override).
+      // Without this, sendGroup blindly assigns spots by index and stomps on whoever's already there
+      // (e.g. Eddie's home is on a couch spot; a second pingpong group can land on the existing pair).
+      const unoccupiedSpots = allSpots.filter(spot => {
+        return !workers.some(w => {
+          if (agents.includes(w.id)) return false; // ignore the agents we're about to send
+          if (w.id === 'auditor' && !runFinalAudit) return false;
+          const phasePos = phasePositions[activePhase]?.[w.id];
+          const idlePos = idlePositionsRef.current[w.id];
+          const home = homePositions[w.id];
+          const cur = phasePos || idlePos || home;
+          return cur.x === spot.x && cur.y === spot.y;
+        });
+      });
+
+      // Pingpong requires a partner — abort if both spots aren't free.
+      if (groupLabel === 'pingpong' && unoccupiedSpots.length < 2) return;
+      // Hookah/couch: skip if every seat is taken.
+      if (unoccupiedSpots.length === 0) return;
+
+      const spots = unoccupiedSpots;
+
+      // Pingpong is a paired game — both players leave together. Compute one shared
+      // wall-clock return time so agent[1] doesn't get stranded alone after agent[0] heads home.
+      const sharedReturnAt = groupLabel === 'pingpong'
+        ? performance.now() + (30000 + Math.random() * 30000)
+        : null;
+
+      // Per-spot final facing:
+      //   couch    -> back (sit, look at TV)
+      //   hookah   -> front (sit around the table, look out)
+      //   pingpong -> face inward (left spot looks right, right spot looks left)
+      const facingForSpot = (spot: typeof spots[0]) => {
+        if (groupLabel === 'couch') return 'back' as const;
+        if (groupLabel === 'pingpong') return spot.x < 210 ? 'right' as const : 'left' as const;
+        return 'front' as const;
+      };
 
       agents.forEach((wId, i) => {
         if (i >= spots.length) return;
         const spot = spots[i];
-        const currentPos = idlePositions[wId] || homePositions[wId];
+        const facing = facingForSpot(spot);
 
         // Stagger departures slightly
         const departTimer = window.setTimeout(() => {
@@ -864,7 +986,11 @@ export function LunarOfficeScene({
           }, 2600);
           idleWanderRef.current.push(stopTimer);
 
-          // Return home after 30-60s
+          // Return home — pingpong uses the shared wall-clock return time so the pair leaves together.
+          // Other group spots use their own random delay (chilling agents leave independently).
+          const returnDelay = sharedReturnAt !== null
+            ? Math.max(0, sharedReturnAt - performance.now())
+            : 30000 + Math.random() * 30000;
           const returnTimer = window.setTimeout(() => {
             const home = homePositions[wId];
             const returnFacing = home.x < spot.x ? 'left' as const : 'right' as const;
@@ -875,7 +1001,7 @@ export function LunarOfficeScene({
               setIdlePositions(p => ({ ...p, [wId]: null }));
             }, 2600);
             idleWanderRef.current.push(returnStop);
-          }, 30000 + Math.random() * 30000);
+          }, returnDelay);
           idleWanderRef.current.push(returnTimer);
         }, i * 1500);
         idleWanderRef.current.push(departTimer);
@@ -891,14 +1017,19 @@ export function LunarOfficeScene({
         const available = allIds.filter(id => !activeWorkerIdsRef.current.has(id));
         if (available.length === 0) { scheduleWander(); return; }
 
-        // 25% chance of group gathering when 2+ agents available
-        if (available.length >= 2 && Math.random() < 0.25) {
+        // 50% chance of group gathering when 2+ agents available.
+        // Weighted: pingpong is the most fun visual so it fires more often than hookah/couch.
+        if (available.length >= 2 && Math.random() < 0.5) {
           const shuffled = [...available].sort(() => Math.random() - 0.5);
           const groupSize = Math.min(2 + Math.floor(Math.random() * 2), shuffled.length); // 2-3 agents
           const group = shuffled.slice(0, groupSize);
-          const spotChoices = ['hookah', 'couch', 'pingpong'] as const;
-          const spot = spotChoices[Math.floor(Math.random() * spotChoices.length)];
-          sendGroup(spot, group);
+          // Weights: pingpong 55%, hookah 25%, couch 20%
+          const r = Math.random();
+          const spot: 'pingpong' | 'hookah' | 'couch' =
+            r < 0.55 ? 'pingpong' : r < 0.80 ? 'hookah' : 'couch';
+          // Pingpong always uses exactly 2 players — trim group if it's bigger.
+          const finalGroup = spot === 'pingpong' ? group.slice(0, 2) : group;
+          sendGroup(spot, finalGroup);
           scheduleWander();
           return;
         }
@@ -926,11 +1057,13 @@ export function LunarOfficeScene({
           // Walk to a random spot — avoid spots occupied by other agents
           // Considers ALL other workers' actual positions (phase override > idle > home)
           // so wanderers don't land on top of someone at home or at a phase desk.
+          // Pingpong is excluded here — it requires a partner, so only sendGroup() puts agents there.
           const occupiedPositions = computeOccupiedPositions(wId, activePhase, runFinalAudit, idlePositionsRef.current);
-          const startIdx = Math.floor(Math.random() * idleSpots.length);
-          let spot = idleSpots[startIdx];
-          for (let attempt = 0; attempt < idleSpots.length; attempt++) {
-            const candidate = idleSpots[(startIdx + attempt) % idleSpots.length];
+          const soloSpots = idleSpots.filter(s => s.label !== 'pingpong');
+          const startIdx = Math.floor(Math.random() * soloSpots.length);
+          let spot = soloSpots[startIdx];
+          for (let attempt = 0; attempt < soloSpots.length; attempt++) {
+            const candidate = soloSpots[(startIdx + attempt) % soloSpots.length];
             if (!isCandidateBlocked(candidate, occupiedPositions)) { spot = candidate; break; }
           }
           const isCouch = spot.label === 'couch';
@@ -1007,6 +1140,20 @@ export function LunarOfficeScene({
   }
   const activeWorkerIdsRef = useRef(activeWorkerIds);
   activeWorkerIdsRef.current = activeWorkerIds;
+
+  // TV is on whenever any agent is parked at a couch spot (idle wander OR home position).
+  // Used to gate the TVScreen channel cycling.
+  const couchOccupied = useMemo(() => {
+    const couchSpots = idleSpots.filter(s => s.label === 'couch');
+    return workers.some(w => {
+      if (w.id === 'auditor' && !runFinalAudit) return false;
+      const phasePos = phasePositions[activePhase]?.[w.id];
+      const idlePos = idlePositions[w.id];
+      const home = homePositions[w.id];
+      const cur = phasePos || idlePos || home;
+      return couchSpots.some(s => s.x === cur.x && s.y === cur.y);
+    });
+  }, [activePhase, idlePositions, runFinalAudit]);
 
   // Check if both ping pong spots are occupied
   const pingPongSpots = idleSpots.filter(s => s.label === 'pingpong');
@@ -1231,6 +1378,8 @@ export function LunarOfficeScene({
 
           {/* TV + couch */}
           <Sprite src="/sprites/tv.png" x={990} y={295} w={230} h={158} z={6} />
+          {/* TV screen — cycles channels when anyone is on the couch, dark when not */}
+          <TVScreen isOn={couchOccupied} />
           <Sprite src="/sprites/couch.png" x={980} y={390} w={240} h={160} z={25} />
 
           {/* "Water pipe" — on Reviewer's desk */}
